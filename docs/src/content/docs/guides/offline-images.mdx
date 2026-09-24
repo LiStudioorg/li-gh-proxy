@@ -18,7 +18,7 @@ HubProxy Web 界面（`enableFrontend = true`）与 API 支持将镜像在线打
 | 来源 | 输入示例 |
 |------|---------|
 | Docker Hub | `nginx`、`redis:7` |
-| GHCR | `ghcr.io/sky22333/hubproxy`、`ghcr.io/owner/app:v1.0` |
+| GHCR | `ghcr.io/listudioorg/li-gh-proxy`、`ghcr.io/owner/app:v1.0` |
 | Quay | `quay.io/coreos/etcd:latest` |
 | GCR / K8s | `gcr.io/distroless/base`、`registry.k8s.io/pause:3.9` |
 
@@ -72,7 +72,7 @@ curl -L -o nginx.tar "https://example.com/api/image/download?image=library/nginx
 ```bash
 curl -X POST "https://example.com/api/image/batch?mode=prepare" \
   -H "Content-Type: application/json" \
-  -d '{"images":["nginx:latest","ghcr.io/sky22333/hubproxy:latest"],"useCompressedLayers":true}'
+  -d '{"images":["nginx:latest","ghcr.io/listudioorg/li-gh-proxy:latest"],"useCompressedLayers":true}'
 ```
 
 **第二步：下载合并 tar**

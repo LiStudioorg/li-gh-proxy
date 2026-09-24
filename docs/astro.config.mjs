@@ -27,11 +27,11 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/sky22333/hubproxy',
+          href: 'https://github.com/LiStudioorg/li-gh-proxy',
         },
       ],
       editLink: {
-        baseUrl: 'https://github.com/sky22333/hubproxy/edit/main/docs/',
+        baseUrl: 'https://github.com/LiStudioorg/li-gh-proxy/edit/main/docs/',
       },
       sidebar: [
         {

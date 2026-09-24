@@ -13,7 +13,7 @@ docker run -d \
   -p 5000:5000 \
   --restart always \
   -v /path/to/config.toml:/app/config.toml:ro \
-  ghcr.io/sky22333/hubproxy
+  ghcr.io/listudioorg/li-gh-proxy
 ```
 
 :::tip
@@ -25,7 +25,7 @@ docker run -d \
 自动识别系统与架构，从 GitHub Releases 下载 `.deb`、`.rpm` 或 `.apk`：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sky22333/hubproxy/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/LiStudioorg/li-gh-proxy/main/install.sh | sh
 ```
 
 安装完成后服务会自动启动，配置文件位于 `/etc/hubproxy/config.toml`。

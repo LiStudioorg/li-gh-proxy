@@ -5,10 +5,10 @@ version: ${NFPM_VERSION}
 release: "1"
 section: net
 priority: optional
-maintainer: sky22333
+maintainer: LiStudioorg
 description: Docker and GitHub acceleration proxy server
-vendor: sky22333
-homepage: https://github.com/sky22333/hubproxy
+vendor: LiStudioorg
+homepage: https://github.com/LiStudioorg/li-gh-proxy
 license: MIT
 
 contents:

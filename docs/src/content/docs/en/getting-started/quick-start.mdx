@@ -13,7 +13,7 @@ docker run -d \
   -p 5000:5000 \
   --restart always \
   -v /path/to/config.toml:/app/config.toml:ro \
-  ghcr.io/sky22333/hubproxy
+  ghcr.io/listudioorg/li-gh-proxy
 ```
 
 :::tip
@@ -25,7 +25,7 @@ docker run -d \
 Auto-detects OS and architecture, downloads `.deb`, `.rpm`, or `.apk` from GitHub Releases:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/sky22333/hubproxy/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/LiStudioorg/li-gh-proxy/main/install.sh | sh
 ```
 
 The service starts automatically. Config is at `/etc/hubproxy/config.toml`.
