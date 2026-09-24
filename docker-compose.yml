@@ -1,12 +1,13 @@
 services:
   hubproxy:
-    image: ghcr.io/listudioorg/li-gh-proxy
+    image: ghcr.io/listudioorg/li-gh-proxy:latest
     container_name: hubproxy
     restart: always
     ports:
       - "5000:5000"
     volumes:
-      - ./src/config.toml:/app/config.toml:ro
+      # 首次部署：cp src/config.toml ./config.toml 后按需修改
+      - ./config.toml:/app/config.toml:ro
     logging:
       driver: json-file
       options:
