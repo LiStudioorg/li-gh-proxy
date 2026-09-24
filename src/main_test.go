@@ -190,7 +190,7 @@ enableFrontend = true
 	if !strings.Contains(w.Header().Get("Content-Type"), "text/html") {
 		t.Fatalf("content-type = %q, want text/html", w.Header().Get("Content-Type"))
 	}
-	if !strings.Contains(w.Body.String(), `<div id="app">`) {
+	if !strings.Contains(w.Body.String(), `<div id="__nuxt">`) {
 		t.Fatalf("SPA shell missing: %s", w.Body.String())
 	}
 }

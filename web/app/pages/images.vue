@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Loader2 } from 'lucide-vue-next'
+import Button from 'fuxsto-design/button'
+import Input from 'fuxsto-design/input'
+import Textarea from 'fuxsto-design/textarea'
+import Switch from 'fuxsto-design/switch'
+import Card from 'fuxsto-design/card'
+import Alert from 'fuxsto-design/alert'
+import { Message } from 'fuxsto-design/message'
 import {
   fetchImageInfo,
   prepareBatchDownload,
   prepareSingleDownload,
   triggerDownload,
-} from '@/api'
-import { errorMessage } from '@/lib/utils'
-import Button from '@/components/ui/Button.vue'
-import Input from '@/components/ui/Input.vue'
-import PageHero from '@/components/PageHero.vue'
-import Switch from '@/components/ui/Switch.vue'
-import Textarea from '@/components/ui/Textarea.vue'
+} from '~/utils/api'
+import { errorMessage } from '~/utils/format'
+
+useHead({ title: '离线镜像下载 · HubProxy' })
 
 const singleImage = ref('')
 const singlePlatform = ref('linux/amd64')
 const singleCompressed = ref(true)
-const singleStatus = ref('')
 const singleError = ref('')
 const singleLoading = ref(false)
 
 const batchText = ref('')
 const batchPlatform = ref('linux/amd64')
 const batchCompressed = ref(true)
-const batchStatus = ref('')
 const batchError = ref('')
 const batchLoading = ref(false)
 
@@ -36,7 +36,6 @@ async function preflight(images: string[]) {
 
 async function onSingleSubmit() {
   singleError.value = ''
-  singleStatus.value = ''
   const image = singleImage.value.trim()
   if (!image) {
     singleError.value = '请输入镜像名称'
@@ -44,7 +43,6 @@ async function onSingleSubmit() {
   }
 
   singleLoading.value = true
-  singleStatus.value = '正在准备下载...'
   try {
     await preflight([image])
     const data = await prepareSingleDownload({
@@ -54,12 +52,9 @@ async function onSingleSubmit() {
     })
     if (!data.download_url) throw new Error('下载地址生成失败')
     triggerDownload(data.download_url)
-    const platformText = singlePlatform.value.trim()
-      ? ` (${singlePlatform.value.trim()})`
-      : ''
-    singleStatus.value = `开始下载 ${image}${platformText}`
+    const platformText = singlePlatform.value.trim() ? ` (${singlePlatform.value.trim()})` : ''
+    Message.success(`开始下载 ${image}${platformText}`)
   } catch (e) {
-    singleStatus.value = ''
     singleError.value = errorMessage(e, '下载失败')
   } finally {
     singleLoading.value = false
@@ -68,7 +63,6 @@ async function onSingleSubmit() {
 
 async function onBatchSubmit() {
   batchError.value = ''
-  batchStatus.value = ''
   const images = batchText.value
     .split('\n')
     .map((line) => line.trim())
@@ -80,7 +74,6 @@ async function onBatchSubmit() {
   }
 
   batchLoading.value = true
-  batchStatus.value = '正在准备批量下载...'
   try {
     await preflight(images)
     const data = await prepareBatchDownload({
@@ -90,9 +83,8 @@ async function onBatchSubmit() {
     })
     if (!data.download_url) throw new Error('下载地址生成失败')
     triggerDownload(data.download_url)
-    batchStatus.value = `开始下载 ${images.length} 个镜像`
+    Message.success(`开始下载 ${images.length} 个镜像`)
   } catch (e) {
-    batchStatus.value = ''
     batchError.value = errorMessage(e, '下载失败')
   } finally {
     batchLoading.value = false
@@ -108,18 +100,14 @@ async function onBatchSubmit() {
       subtitle="流式下载，兼容 docker load，支持多架构。"
     />
 
-    <section class="field-block">
-      <h2 class="text-center text-sm font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-        单镜像
-      </h2>
+    <Card padding="lg" class="field-block">
+      <template #header>
+        <h2 class="text-center text-sm font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+          单镜像
+        </h2>
+      </template>
 
-      <Transition name="fade" mode="out-in">
-        <p v-if="singleError" key="error" class="text-center text-destructive">{{ singleError }}</p>
-        <p v-else-if="singleStatus" key="status" class="flex items-center justify-center gap-2 text-muted-foreground">
-          <Loader2 v-if="singleLoading" class="size-4 animate-spin" />
-          {{ singleStatus }}
-        </p>
-      </Transition>
+      <Alert v-if="singleError" type="error" :title="singleError" />
 
       <label class="block space-y-1.5">
         <span>镜像名称</span>
@@ -131,31 +119,27 @@ async function onBatchSubmit() {
       </label>
       <div class="flex items-center justify-between py-1">
         <span>压缩层</span>
-        <Switch v-model:checked="singleCompressed" />
+        <Switch v-model="singleCompressed" />
       </div>
-      <Button class="w-full" :disabled="singleLoading" @click="onSingleSubmit">
-        <Loader2 v-if="singleLoading" class="size-4 animate-spin" />
+      <Button class="w-full" :loading="singleLoading" :disabled="singleLoading" @click="onSingleSubmit">
         {{ singleLoading ? '准备中...' : '立即下载' }}
       </Button>
-    </section>
+    </Card>
 
-    <section class="section-gap field-block">
-      <h2 class="text-center text-sm font-semibold tracking-[0.16em] text-muted-foreground uppercase">
-        批量下载
-      </h2>
+    <Card padding="lg" class="section-gap field-block">
+      <template #header>
+        <h2 class="text-center text-sm font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+          批量下载
+        </h2>
+      </template>
 
-      <Transition name="fade" mode="out-in">
-        <p v-if="batchError" key="error" class="text-center text-destructive">{{ batchError }}</p>
-        <p v-else-if="batchStatus" key="status" class="flex items-center justify-center gap-2 text-muted-foreground">
-          <Loader2 v-if="batchLoading" class="size-4 animate-spin" />
-          {{ batchStatus }}
-        </p>
-      </Transition>
+      <Alert v-if="batchError" type="error" :title="batchError" />
 
       <label class="block space-y-1.5">
         <span>镜像列表</span>
         <Textarea
           v-model="batchText"
+          :rows="5"
           placeholder="alpine&#10;redis:alpine&#10;user/app:1.0"
         />
       </label>
@@ -165,12 +149,11 @@ async function onBatchSubmit() {
       </label>
       <div class="flex items-center justify-between py-1">
         <span>压缩层</span>
-        <Switch v-model:checked="batchCompressed" />
+        <Switch v-model="batchCompressed" />
       </div>
-      <Button class="w-full" :disabled="batchLoading" @click="onBatchSubmit">
-        <Loader2 v-if="batchLoading" class="size-4 animate-spin" />
+      <Button class="w-full" :loading="batchLoading" :disabled="batchLoading" @click="onBatchSubmit">
         {{ batchLoading ? '准备中...' : '批量下载' }}
       </Button>
-    </section>
+    </Card>
   </div>
 </template>

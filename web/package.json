@@ -8,27 +8,23 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "nuxt dev",
+    "build": "nuxt generate",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
     "@fontsource-variable/manrope": "^5.2.8",
-    "@fontsource/syne": "^5.2.7",
-    "clsx": "^2.1.1",
-    "lucide-vue-next": "^0.577.0",
-    "tailwind-merge": "^3.6.0",
-    "vue": "^3.5.39",
-    "vue-router": "^4.6.4"
+    "fuxsto-design": "^1.0.4",
+    "lucide-vue-next": "^0.577.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
-    "@types/node": "^24.13.2",
-    "@vitejs/plugin-vue": "^6.0.7",
-    "@vue/tsconfig": "^0.9.1",
+    "@types/node": "^26.6.2",
+    "nuxt": "^4.5.2",
     "tailwindcss": "^4.3.2",
     "typescript": "~6.0.2",
-    "vite": "^8.1.1",
-    "vue-tsc": "^3.3.5"
+    "vue": "^3.5.39",
+    "vue-tsc": "^3.3.11"
   }
 }

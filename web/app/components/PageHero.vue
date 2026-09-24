@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Title from 'fuxsto-design/title'
+
 defineProps<{
   eyebrow: string
   title: string
@@ -10,7 +12,7 @@ defineProps<{
 <template>
   <header class="page-hero">
     <p class="eyebrow">{{ eyebrow }}</p>
-    <h1 class="display-title" :class="{ 'gradient-text': gradient }">{{ title }}</h1>
+    <Title :level="1" :gradient="gradient" class="tracking-tight">{{ title }}</Title>
     <p class="mx-auto max-w-xl text-lg text-muted-foreground sm:text-xl">
       {{ subtitle }}
     </p>

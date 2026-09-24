@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import { Check, Clipboard, Container, Link2, Rocket, Sparkles } from 'lucide-vue-next'
-import Button from '@/components/ui/Button.vue'
-import Input from '@/components/ui/Input.vue'
-import PageHero from '@/components/PageHero.vue'
-import { copyText } from '@/lib/utils'
+import Button from 'fuxsto-design/button'
+import Input from 'fuxsto-design/input'
+import Card from 'fuxsto-design/card'
+import Chip from 'fuxsto-design/chip'
+import Alert from 'fuxsto-design/alert'
+import { copyText } from '~/utils/format'
+
+useHead({ title: 'GitHub 加速 · HubProxy' })
+
+const host = computed(() => window.location.host)
 
 const input = ref('')
 const output = ref('')
 const error = ref('')
 const copied = ref(false)
-
-const host = computed(() => window.location.host)
 
 const features = [
   { icon: Rocket, label: 'GitHub 加速' },
@@ -92,31 +95,33 @@ function onOpen() {
       gradient
     >
       <div class="flex flex-wrap justify-center gap-2 pt-2">
-        <span
+        <Chip
           v-for="item in features"
           :key="item.label"
-          class="feature-pill"
+          variant="outline"
+          round
+          :icon="item.icon"
+          class="backdrop-blur-sm"
         >
-          <component :is="item.icon" class="size-4" />
           {{ item.label }}
-        </span>
+        </Chip>
       </div>
     </PageHero>
 
-    <section class="surface-panel field-block">
+    <Card padding="lg" class="field-block">
       <div class="flex flex-col gap-3 sm:flex-row">
         <Input
           v-model="input"
           class="sm:flex-1"
           placeholder="粘贴 GitHub / Hugging Face 原始链接"
-          @keyup.enter="formatLink"
+          @keydown.enter="formatLink"
         />
         <Button @click="formatLink">获取加速链接</Button>
       </div>
 
       <Transition name="fade" mode="out-in">
-        <p v-if="error" key="error" class="text-center text-destructive">{{ error }}</p>
-        <div v-else-if="output" key="output" class="space-y-4 pt-2">
+        <Alert v-if="error" key="error" type="error" :title="error" />
+        <div v-else-if="output" key="output" class="space-y-4 pt-1">
           <div class="flex items-center justify-center gap-2 font-medium text-primary">
             <Check class="size-4" />
             加速链接已生成
@@ -136,9 +141,9 @@ function onOpen() {
           </div>
         </div>
       </Transition>
-    </section>
+    </Card>
 
-    <section class="space-y-6 pt-12">
+    <section class="section-gap space-y-6">
       <div class="space-y-1 text-center">
         <h2 class="text-sm font-semibold tracking-[0.16em] text-muted-foreground uppercase">
           Docker 镜像加速
@@ -161,7 +166,7 @@ function onOpen() {
             :key="item.id"
             class="terminal-example"
           >
-            <span class="example-tag">{{ item.label }}</span>
+            <Chip variant="secondary" size="sm" class="mb-1">{{ item.label }}</Chip>
             <p class="font-mono leading-relaxed">
               <span class="text-muted-foreground">$ </span>
               <span class="text-muted-foreground/70 line-through decoration-muted-foreground/40">{{ item.original }}</span>

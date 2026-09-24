@@ -1,17 +1,21 @@
-﻿<script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ChevronLeft, ChevronRight, Copy, Loader2, Search } from 'lucide-vue-next'
+<script setup lang="ts">
+import { ChevronLeft, Copy, Search } from 'lucide-vue-next'
+import Button from 'fuxsto-design/button'
+import Input from 'fuxsto-design/input'
+import Chip from 'fuxsto-design/chip'
+import Empty from 'fuxsto-design/empty'
+import Skeleton from 'fuxsto-design/skeleton'
+import Pagination from 'fuxsto-design/pagination'
+import { Message } from 'fuxsto-design/message'
 import {
   fetchTags,
   searchImages,
   type Repository,
   type TagInfo,
-} from '@/api'
-import { copyText, errorMessage, formatArchs, formatNumber, formatSize, formatTimeAgo } from '@/lib/utils'
-import Button from '@/components/ui/Button.vue'
-import Input from '@/components/ui/Input.vue'
-import PageHero from '@/components/PageHero.vue'
+} from '~/utils/api'
+import { copyText, errorMessage, formatArchs, formatNumber, formatSize, formatTimeAgo } from '~/utils/format'
+
+useHead({ title: '镜像搜索 · HubProxy' })
 
 interface RepoView {
   raw: Repository
@@ -39,13 +43,14 @@ const tags = ref<TagInfo[]>([])
 const tagFilter = ref('')
 const tagsPage = ref(1)
 const tagsHasMore = ref(false)
-const copyHint = ref('')
-
-const host = computed(() => window.location.host)
+const TAG_PAGE_SIZE = 100
 
 const hasResults = computed(() => results.value.length > 0)
 const totalPages = computed(() => Math.max(1, Math.ceil(resultCount.value / pageSize)))
-const hasMoreResults = computed(() => resultsPage.value < totalPages.value)
+
+const tagsTotal = computed(() =>
+  tagsHasMore.value ? (tagsPage.value + 1) * TAG_PAGE_SIZE : tagsPage.value * TAG_PAGE_SIZE,
+)
 
 const filteredTags = computed(() => {
   const q = tagFilter.value.trim().toLowerCase()
@@ -117,7 +122,7 @@ async function runSearch(q: string, page = 1) {
     let searchQuery = trimmed
     let targetRepo = ''
     if (trimmed.includes('/')) {
-      const [ns] = trimmed.split('/')
+      const [ns = ''] = trimmed.split('/')
       searchQuery = ns
       targetRepo = trimmed.toLowerCase()
     }
@@ -161,8 +166,8 @@ async function onSearch() {
   await runSearch(q, 1)
 }
 
-async function loadResultsPage(page: number) {
-  if (page < 1 || page > totalPages.value || searching.value) return
+async function onResultsPageChange(page: number) {
+  if (searching.value) return
   await runSearch(query.value, page)
   window.scrollTo(0, 0)
 }
@@ -175,7 +180,7 @@ async function loadTagPage(repo: RepoView, page: number) {
   if (page === 1) tagFilter.value = ''
 
   try {
-    const data = await fetchTags(repo.namespace, repo.name, page, 100)
+    const data = await fetchTags(repo.namespace, repo.name, page, TAG_PAGE_SIZE)
     tags.value = data.tags || []
     tagsHasMore.value = !!data.has_more
     if (tags.value.length === 0) tagsError.value = '该镜像暂无可用标签'
@@ -185,6 +190,11 @@ async function loadTagPage(repo: RepoView, page: number) {
   } finally {
     tagsLoading.value = false
   }
+}
+
+async function onTagsPageChange(page: number) {
+  if (!selected.value || tagsLoading.value) return
+  await loadTagPage(selected.value, page)
 }
 
 function backToResults() {
@@ -197,14 +207,12 @@ function backToResults() {
 async function copyPull(tagName?: string) {
   if (!selected.value) return
   const image = tagName
-    ? `${host.value}/${selected.value.fullRepoName}:${tagName}`
-    : `${host.value}/${selected.value.fullRepoName}`
+    ? `${window.location.host}/${selected.value.fullRepoName}:${tagName}`
+    : `${window.location.host}/${selected.value.fullRepoName}`
   const refName = `docker pull ${image}`
   const ok = await copyText(refName)
-  copyHint.value = ok ? `已复制 ${refName}` : '复制失败'
-  setTimeout(() => {
-    if (copyHint.value.includes(refName) || copyHint.value === '复制失败') copyHint.value = ''
-  }, 2000)
+  if (ok) Message.success(`已复制 ${refName}`)
+  else Message.error('复制失败')
 }
 
 watch(
@@ -236,22 +244,18 @@ watch(
             placeholder="例如 nginx、redis、library/ubuntu"
             @keydown.enter="onSearch"
           />
-          <Button :disabled="searching" @click="onSearch">
-            <Loader2 v-if="searching" class="size-4 animate-spin" />
-            <Search v-else class="size-4" />
+          <Button :loading="searching" :disabled="searching" @click="onSearch">
+            <Search v-if="!searching" class="size-4" />
             {{ searching ? '搜索中...' : '搜索' }}
           </Button>
         </div>
 
-        <p
-          v-if="searchError"
-          class="text-center text-destructive"
-        >
+        <p v-if="searchError && !searching" class="text-center text-destructive">
           {{ searchError }}
         </p>
 
-        <div v-if="searching" class="space-y-3">
-          <div v-for="i in 3" :key="i" class="h-16 animate-pulse rounded-xl bg-muted" />
+        <div v-if="searching" class="space-y-3 pt-2">
+          <Skeleton :rows="3" :height="64" round />
         </div>
 
         <div v-else-if="hasResults" class="space-y-2">
@@ -269,91 +273,68 @@ watch(
             >
               <div class="mb-1 flex flex-wrap items-center gap-2">
                 <span class="text-base font-medium">{{ item.displayName }}</span>
-                <span
-                  v-if="item.raw.is_official"
-                  class="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] text-primary"
-                >官方</span>
-                <span
-                  v-if="item.raw.star_count"
-                  class="text-xs text-muted-foreground"
-                >★ {{ formatNumber(item.raw.star_count) }}</span>
-                <span
-                  v-if="item.raw.pull_count"
-                  class="text-xs text-muted-foreground"
-                >⬇ {{ formatNumber(item.raw.pull_count) }}</span>
+                <Chip v-if="item.raw.is_official" variant="primary" size="sm">官方</Chip>
+                <span v-if="item.raw.star_count" class="text-xs text-muted-foreground">
+                  ★ {{ formatNumber(item.raw.star_count) }}
+                </span>
+                <span v-if="item.raw.pull_count" class="text-xs text-muted-foreground">
+                  ⬇ {{ formatNumber(item.raw.pull_count) }}
+                </span>
               </div>
               <p class="line-clamp-2 text-muted-foreground">
                 {{ item.raw.short_description || '暂无描述' }}
               </p>
             </button>
           </div>
-          <div v-if="totalPages > 1" class="flex items-center justify-center gap-1.5 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="searching || resultsPage <= 1"
-              @click="loadResultsPage(resultsPage - 1)"
-            >
-              <ChevronLeft class="size-4" />
-            </Button>
-            <span class="min-w-14 text-center text-muted-foreground">第 {{ resultsPage }} 页</span>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="searching || !hasMoreResults"
-              @click="loadResultsPage(resultsPage + 1)"
-            >
-              <ChevronRight class="size-4" />
-            </Button>
+          <div v-if="totalPages > 1" class="flex justify-center pt-2">
+            <Pagination
+              v-model:current="resultsPage"
+              :page-size="pageSize"
+              :total="resultCount"
+              :disabled="searching"
+              @change="onResultsPageChange"
+            />
           </div>
         </div>
+
+        <Empty
+          v-else-if="!searchError"
+          title="暂无结果"
+          description="输入关键词开始搜索 Docker Hub 镜像"
+          class="pt-6"
+        />
       </div>
 
       <div v-else key="tags" class="mx-auto max-w-3xl space-y-6">
         <button
           type="button"
-          class="text-muted-foreground transition-colors hover:text-primary"
+          class="flex items-center gap-1 text-muted-foreground transition-colors hover:text-primary"
           @click="backToResults"
         >
-          ← 返回搜索结果
+          <ChevronLeft class="size-4" />
+          返回搜索结果
         </button>
 
         <div class="space-y-2 text-center">
           <div class="flex flex-wrap items-center justify-center gap-2">
-            <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">{{ selected.fullRepoName }}</h2>
-            <span
-              v-if="selected.raw.is_official"
-              class="rounded-full bg-primary/12 px-2 py-0.5 text-[11px] text-primary"
-            >官方</span>
+            <h2 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {{ selected.fullRepoName }}
+            </h2>
+            <Chip v-if="selected.raw.is_official" variant="primary" size="sm">官方</Chip>
           </div>
           <p class="text-base text-muted-foreground">
             {{ selected.raw.short_description || '暂无描述' }}
           </p>
-          <Transition name="fade">
-            <p v-if="copyHint" class="text-muted-foreground">{{ copyHint }}</p>
-          </Transition>
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <Input v-model="tagFilter" class="sm:flex-1" placeholder="筛选当前页标签..." />
+          <Input
+            v-model="tagFilter"
+            class="sm:flex-1"
+            placeholder="筛选当前页标签..."
+            clearable
+          />
           <div class="flex items-center gap-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="tagsLoading || tagsPage <= 1"
-              @click="loadTagPage(selected, tagsPage - 1)"
-            >
-              <ChevronLeft class="size-4" />
-            </Button>
-            <span class="min-w-14 text-center text-muted-foreground">第 {{ tagsPage }} 页</span>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="tagsLoading || !tagsHasMore"
-              @click="loadTagPage(selected, tagsPage + 1)"
-            >
-              <ChevronRight class="size-4" />
-            </Button>
             <Button variant="outline" size="sm" @click="copyPull()">
               <Copy class="size-4" />
               复制
@@ -363,11 +344,14 @@ watch(
 
         <p v-if="tagsError" class="text-center text-destructive">{{ tagsError }}</p>
         <div v-else-if="tagsLoading" class="space-y-3">
-          <div v-for="i in 5" :key="i" class="h-14 animate-pulse rounded-xl bg-muted" />
+          <Skeleton :rows="5" :height="56" round />
         </div>
-        <p v-else-if="displayTags.length === 0" class="text-center text-muted-foreground">
-          没有匹配的标签
-        </p>
+        <Empty
+          v-else-if="displayTags.length === 0"
+          title="没有匹配的标签"
+          variant="dashed"
+          size="sm"
+        />
         <div v-else class="divide-y divide-border border-y border-border">
           <div
             v-for="{ tag, archs, size } in displayTags"
@@ -381,11 +365,9 @@ watch(
                 {{ formatTimeAgo(tag.last_updated) }}
               </p>
               <div v-if="archs.length" class="flex flex-wrap gap-1.5">
-                <span
-                  v-for="arch in archs"
-                  :key="arch"
-                  class="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[11px] text-primary"
-                >{{ arch }}</span>
+                <Chip v-for="arch in archs" :key="arch" variant="secondary" size="sm" class="font-mono">
+                  {{ arch }}
+                </Chip>
               </div>
             </div>
             <Button variant="outline" size="sm" class="shrink-0" @click="copyPull(tag.name)">
@@ -393,6 +375,16 @@ watch(
               复制
             </Button>
           </div>
+        </div>
+
+        <div v-if="!tagsError && (tags.length > 0 || tagsPage > 1)" class="flex justify-center">
+          <Pagination
+            v-model:current="tagsPage"
+            :page-size="TAG_PAGE_SIZE"
+            :total="tagsTotal"
+            :disabled="tagsLoading"
+            @change="onTagsPageChange"
+          />
         </div>
       </div>
     </Transition>

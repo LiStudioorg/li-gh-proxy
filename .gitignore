@@ -8,10 +8,11 @@
 *.exe
 build/
 
-# Frontend (web/)
+# Frontend (web/, Nuxt 4)
 web/node_modules/
-web/dist/
-web/dist-ssr/
+web/.nuxt/
+web/.output/
+web/.data/
 web/.tmp/
 web/*.local
 web/npm-debug.log*
