@@ -194,3 +194,67 @@ enableFrontend = true
 		t.Fatalf("SPA shell missing: %s", w.Body.String())
 	}
 }
+
+func TestNodesAPIReturnsConfiguredNodes(t *testing.T) {
+	router := newTestRouter(t, `
+[[nodes]]
+name = "节点 A"
+url = "https://a.example.com"
+
+[[nodes]]
+url = "https://b.example.com"
+`)
+
+	w := performRequest(router, http.MethodGet, "/api/nodes", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", w.Code, w.Body.String())
+	}
+
+	var got struct {
+		Current string `json:"current"`
+		Nodes   []struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"nodes"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	// httptest.NewRequest 默认 Host 为 example.com
+	if got.Current != "example.com" {
+		t.Fatalf("current = %q, want example.com", got.Current)
+	}
+	if len(got.Nodes) != 2 {
+		t.Fatalf("nodes = %+v, want 2 entries", got.Nodes)
+	}
+	if got.Nodes[0].Name != "节点 A" || got.Nodes[0].URL != "https://a.example.com" {
+		t.Fatalf("nodes[0] = %+v", got.Nodes[0])
+	}
+	// name 缺失时后端自动补全为域名
+	if got.Nodes[1].Name != "b.example.com" {
+		t.Fatalf("nodes[1].name = %q, want auto-filled host", got.Nodes[1].Name)
+	}
+}
+
+func TestNodesAPIEmptyWhenNotConfigured(t *testing.T) {
+	router := newTestRouter(t, "")
+
+	w := performRequest(router, http.MethodGet, "/api/nodes", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", w.Code, w.Body.String())
+	}
+
+	var got struct {
+		Current string            `json:"current"`
+		Nodes   []json.RawMessage `json:"nodes"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Nodes) != 0 {
+		t.Fatalf("nodes = %v, want empty list", got.Nodes)
+	}
+	if got.Current == "" {
+		t.Fatal("current 不应为空")
+	}
+}

@@ -90,3 +90,14 @@ enabled = true
 enabled = true
 # 默认缓存时间（时长字符串，如 "20m"、"1h30m"、"90s"），启动时校验
 defaultTTL = "20m"
+
+# 加速节点列表（本服务的其他部署地址），配置后展示在前端页面供用户切换
+# name 留空时自动使用域名；url 必须为 http:// 或 https:// 完整地址
+# 留空（删除或注释全部节点）时前端仅使用当前站点域名
+# [[nodes]]
+# name = "节点 A"
+# url = "https://a.example.com"
+#
+# [[nodes]]
+# name = "节点 B"
+# url = "https://b.example.com"

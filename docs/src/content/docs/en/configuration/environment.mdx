@@ -21,6 +21,7 @@ Environment variables override config after `config.toml` is loaded. Sections no
 | `IP_BLACKLIST` | `[security].blackList` | Blocked IPs, comma-separated; setting it **replaces** the file list |
 | `ACCESS_PROXY` | `[access].proxy` | Upstream SOCKS5 proxy URL; set to empty string to clear |
 | `MAX_IMAGES` | `[download].maxImages` | Max images per batch offline download |
+| `NODES` | `[[nodes]]` | Acceleration node URLs, comma-separated (names auto-derived from hostnames); setting it **replaces** the file list, empty string clears it |
 
 > **Behavior change**: `IP_WHITELIST` / `IP_BLACKLIST` used to be *appended* to the file list; they now fully *replace* it when set. Include the full list in the env var if you want to keep the file entries.
 

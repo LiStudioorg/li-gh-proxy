@@ -86,4 +86,5 @@ func freeze(cfg *AppConfig) {
 		registries[domain] = mapping
 	}
 	cfg.Registries = registries
+	cfg.Nodes = append([]NodeConfig(nil), cfg.Nodes...)
 }

@@ -89,11 +89,37 @@ Manifest 缓存 TTL 规则：
 
 上游 token 响应中的 `expires_in` 会用于 token 缓存（预留 5 分钟安全余量，最短 5 分钟）。
 
+## [[nodes]]
+
+加速节点列表（本服务的其他部署地址），配置后展示在前端首页供用户切换，切换后页面生成的加速链接与 `docker pull` 示例将使用所选节点的域名。用户的选择保存在浏览器 `localStorage`（key: `node`），修改配置重启后生效。
+
+每个节点条目：
+
+| 键 | 类型 | 说明 |
+|----|------|------|
+| `name` | string | 展示名称，留空时自动使用 `url` 的域名 |
+| `url` | string | 节点完整地址，必须为 `http://` 或 `https://` 开头，非法值会导致启动失败 |
+
+```toml
+[[nodes]]
+name = "节点 A"
+url = "https://a.example.com"
+
+[[nodes]]
+name = "节点 B"
+url = "https://b.example.com"
+```
+
+:::note
+列表为空（默认）时前端不显示节点切换器，所有链接使用当前站点域名。节点列表通过 `GET /api/nodes` 提供。
+:::
+
 ## HTTP 端点
 
 | 路径 | 说明 |
 |------|------|
 | `GET /ready` | 健康检查，返回 `ready`、`version`、`uptime_sec` 等（**计入** IP 限流） |
+| `GET /api/nodes` | 加速节点列表（`current` 为当前请求 Host） |
 | `GET /api/search?q=...` | Docker Hub 镜像搜索 |
 | `GET /api/tags/:namespace/:name` | 镜像标签列表 |
 | `GET /api/image/info?image=...` | 镜像元信息 |

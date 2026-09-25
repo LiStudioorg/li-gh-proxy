@@ -89,11 +89,37 @@ Manifest cache TTL rules:
 
 Upstream token `expires_in` is used for token cache (5-minute safety margin, minimum 5 minutes).
 
+## [[nodes]]
+
+List of acceleration nodes (alternative deployment addresses of this service). Once configured, they are shown on the frontend home page for users to switch between; generated accelerated links and `docker pull` examples will use the selected node's domain. The user's choice is stored in browser `localStorage` (key: `node`). Changes take effect after restart.
+
+Each node entry:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `name` | string | Display name; if empty, the `url` hostname is used automatically |
+| `url` | string | Full node address, must start with `http://` or `https://`; invalid values cause startup failure |
+
+```toml
+[[nodes]]
+name = "Node A"
+url = "https://a.example.com"
+
+[[nodes]]
+name = "Node B"
+url = "https://b.example.com"
+```
+
+:::note
+When the list is empty (the default), the node switcher is not rendered and all links use the current site's domain. The node list is served via `GET /api/nodes`.
+:::
+
 ## HTTP Endpoints
 
 | Path | Description |
 |------|-------------|
 | `GET /ready` | Health check — returns `ready`, `version`, `uptime_sec`, etc. (**counts toward** rate limit) |
+| `GET /api/nodes` | Acceleration node list (`current` is the current request Host) |
 | `GET /api/search?q=...` | Docker Hub image search |
 | `GET /api/tags/:namespace/:name` | Image tag list |
 | `GET /api/image/info?image=...` | Image metadata |

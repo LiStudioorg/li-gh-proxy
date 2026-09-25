@@ -9,12 +9,16 @@ import { copyText } from '~/utils/format'
 
 useHead({ title: 'GitHub 加速 · li-gh-proxy' })
 
-const host = computed(() => window.location.host)
+const { origin, host, load } = useNodes()
 
 const input = ref('')
 const output = ref('')
 const error = ref('')
 const copied = ref(false)
+
+onMounted(() => {
+  load()
+})
 
 const features = [
   { icon: Rocket, label: 'GitHub 加速' },
@@ -62,12 +66,12 @@ function formatLink() {
   }
 
   if (link.startsWith('https://') || link.startsWith('http://')) {
-    output.value = `https://${host.value}/${link}`
+    output.value = `${origin.value}/${link}`
     return
   }
 
   if (allowedHosts.some((prefix) => link.startsWith(prefix))) {
-    output.value = `https://${host.value}/https://${link}`
+    output.value = `${origin.value}/https://${link}`
     return
   }
 
@@ -107,6 +111,8 @@ function onOpen() {
         </Chip>
       </div>
     </PageHero>
+
+    <NodeSwitcher />
 
     <Card padding="lg" class="field-block">
       <div class="flex flex-col gap-3 sm:flex-row">

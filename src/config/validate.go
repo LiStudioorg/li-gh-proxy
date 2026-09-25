@@ -55,6 +55,25 @@ func validate(cfg *AppConfig) ([]string, error) {
 		}
 	}
 
+	seenNodeURLs := make(map[string]bool, len(cfg.Nodes))
+	for i := range cfg.Nodes {
+		node := &cfg.Nodes[i]
+		node.Name = strings.TrimSpace(node.Name)
+		node.URL = strings.TrimSpace(node.URL)
+		if !validNodeURL(node.URL) {
+			errs = append(errs, fmt.Sprintf("nodes[%d].url=%q 非法（需 http:// 或 https:// 完整地址）", i, node.URL))
+			continue
+		}
+		if node.Name == "" {
+			node.Name = nodeHost(node.URL)
+			warns = append(warns, fmt.Sprintf("nodes[%d].name 为空，已自动使用域名 %q", i, node.Name))
+		}
+		if seenNodeURLs[node.URL] {
+			warns = append(warns, fmt.Sprintf("nodes[%d].url=%q 重复，前端将展示重复条目", i, node.URL))
+		}
+		seenNodeURLs[node.URL] = true
+	}
+
 	checkIPList := func(name string, list []string) {
 		for _, entry := range list {
 			if !validIPOrCIDR(entry) {
@@ -89,4 +108,24 @@ func validProxyURL(raw string) bool {
 		return false
 	}
 	return validProxySchemes[strings.ToLower(u.Scheme)]
+}
+
+var validNodeSchemes = map[string]bool{
+	"http": true, "https": true,
+}
+
+func validNodeURL(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme == "" || u.Host == "" || u.Fragment != "" || u.RawQuery != "" {
+		return false
+	}
+	return validNodeSchemes[strings.ToLower(u.Scheme)]
+}
+
+func nodeHost(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	return u.Host
 }

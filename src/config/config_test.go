@@ -337,6 +337,127 @@ func TestValidateAcceptsValidIPOrCIDR(t *testing.T) {
 	}
 }
 
+// ---------- 节点配置 ----------
+
+func TestLoadConfigNodesEndToEnd(t *testing.T) {
+	cfg := loadFromString(t, `
+[[nodes]]
+name = "节点 A"
+url = "https://a.example.com"
+
+[[nodes]]
+url = "https://b.example.com"
+`)
+
+	if len(cfg.Nodes) != 2 {
+		t.Fatalf("nodes = %+v, want 2 entries", cfg.Nodes)
+	}
+	if cfg.Nodes[0].Name != "节点 A" || cfg.Nodes[0].URL != "https://a.example.com" {
+		t.Fatalf("nodes[0] = %+v", cfg.Nodes[0])
+	}
+	// name 缺失时由 validate 自动补全为域名
+	if cfg.Nodes[1].Name != "b.example.com" || cfg.Nodes[1].URL != "https://b.example.com" {
+		t.Fatalf("nodes[1] = %+v", cfg.Nodes[1])
+	}
+}
+
+func TestValidateNodesFatalInvalidURL(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Nodes = []NodeConfig{
+		{Name: "bad", URL: "ftp://a.example.com"},
+		{Name: "empty", URL: ""},
+	}
+
+	_, err := validate(cfg)
+	if err == nil {
+		t.Fatal("非法节点 URL 应导致校验失败")
+	}
+	for _, want := range []string{"nodes[0].url", "nodes[1].url"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("错误信息缺少 %q:\n%s", want, err)
+		}
+	}
+}
+
+func TestValidateNodesWarnings(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Nodes = []NodeConfig{
+		{Name: "", URL: "https://a.example.com"},
+		{Name: "重复", URL: "https://a.example.com"},
+	}
+
+	warnings, err := validate(cfg)
+	if err != nil {
+		t.Fatalf("可容忍问题不应致命: %v", err)
+	}
+	if len(warnings) != 2 {
+		t.Fatalf("warnings = %v, want 2", warnings)
+	}
+	if cfg.Nodes[0].Name != "a.example.com" {
+		t.Fatalf("name 应自动补全为域名, got %q", cfg.Nodes[0].Name)
+	}
+}
+
+func TestValidateNodesNormalizesWhitespace(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Nodes = []NodeConfig{
+		{Name: "  节点  ", URL: "  https://a.example.com  "},
+	}
+
+	if _, err := validate(cfg); err != nil {
+		t.Fatalf("validate: %v", err)
+	}
+	if cfg.Nodes[0].Name != "节点" || cfg.Nodes[0].URL != "https://a.example.com" {
+		t.Fatalf("nodes[0] = %+v, 应去除首尾空白", cfg.Nodes[0])
+	}
+}
+
+func TestOverrideFromEnvNodesReplace(t *testing.T) {
+	t.Run("设置即替换", func(t *testing.T) {
+		t.Setenv("NODES", "https://a.example.com, https://b.example.com")
+		cfg := DefaultConfig()
+		cfg.Nodes = []NodeConfig{{Name: "old", URL: "https://old.example.com"}}
+		if warnings := overrideFromEnv(cfg); len(warnings) != 0 {
+			t.Fatalf("unexpected warnings: %v", warnings)
+		}
+		if len(cfg.Nodes) != 2 ||
+			cfg.Nodes[0].Name != "a.example.com" || cfg.Nodes[0].URL != "https://a.example.com" ||
+			cfg.Nodes[1].Name != "b.example.com" || cfg.Nodes[1].URL != "https://b.example.com" {
+			t.Fatalf("nodes = %+v", cfg.Nodes)
+		}
+	})
+
+	t.Run("设空即清空", func(t *testing.T) {
+		t.Setenv("NODES", "")
+		cfg := DefaultConfig()
+		cfg.Nodes = []NodeConfig{{Name: "old", URL: "https://old.example.com"}}
+		overrideFromEnv(cfg)
+		if len(cfg.Nodes) != 0 {
+			t.Fatalf("nodes = %+v, want empty", cfg.Nodes)
+		}
+	})
+
+	t.Run("非法条目告警忽略", func(t *testing.T) {
+		t.Setenv("NODES", "https://good.example.com, not-a-url")
+		cfg := DefaultConfig()
+		if warnings := overrideFromEnv(cfg); len(warnings) != 1 {
+			t.Fatalf("warnings = %v, want 1", warnings)
+		}
+		if len(cfg.Nodes) != 1 || cfg.Nodes[0].URL != "https://good.example.com" {
+			t.Fatalf("nodes = %+v", cfg.Nodes)
+		}
+	})
+
+	t.Run("未设置保留文件值", func(t *testing.T) {
+		cfg := DefaultConfig()
+		cfg.Nodes = []NodeConfig{{Name: "file", URL: "https://file.example.com"}}
+		overrideFromEnv(cfg)
+		if len(cfg.Nodes) != 1 || cfg.Nodes[0].Name != "file" {
+			t.Fatalf("nodes = %+v", cfg.Nodes)
+		}
+	})
+}
+
 // ---------- LoadConfig / GetConfig 端到端 ----------
 
 // 与旧版行为保持兼容的回归用例

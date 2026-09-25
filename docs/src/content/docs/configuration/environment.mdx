@@ -21,6 +21,7 @@ description: li-gh-proxy 支持的环境变量说明。
 | `IP_BLACKLIST` | `[security].blackList` | 封禁 IP，逗号分隔；设置即**整体替换**文件名单 |
 | `ACCESS_PROXY` | `[access].proxy` | 上游 SOCKS5 代理地址；设为空串表示清除 |
 | `MAX_IMAGES` | `[download].maxImages` | 批量离线镜像数量上限 |
+| `NODES` | `[[nodes]]` | 加速节点 URL，逗号分隔（name 自动取域名）；设置即**整体替换**文件节点列表，设为空串表示清空 |
 
 > **行为变更提示**：`IP_WHITELIST` / `IP_BLACKLIST` 历史版本为「追加到配置文件名单」，现统一为「设置即替换」。如需保留文件名单，请在环境变量中一并写全。
 

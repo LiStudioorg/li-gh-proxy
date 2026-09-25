@@ -53,6 +53,7 @@ li-gh-proxy/
 │   │   ├── docker.go           # Docker Registry v2 代理（/v2/*、/token*）
 │   │   ├── github.go           # GitHub / HuggingFace 代理（NoRoute 兜底）
 │   │   ├── imagetar.go         # 离线镜像流式打包下载（/api/image/*）
+│   │   ├── nodes.go            # 加速节点 API（/api/nodes，读配置 [[nodes]]）
 │   │   └── search.go           # Docker Hub 搜索 / 标签 API（/api/search、/api/tags）
 │   ├── utils/
 │   │   ├── access_control.go   # 仓库/镜像黑白名单 + 通配符匹配
@@ -66,8 +67,8 @@ li-gh-proxy/
 │   └── app/
 │       ├── app.vue             # 根组件（标题 + AppShell 外壳）
 │       ├── assets/css/main.css # tailwindcss + fuxsto-design/styles + Manrope 字体
-│       ├── components/         # AppShell（导航/主题切换）、PageHero
-│       ├── composables/        # useTheme（暗色模式）
+│       ├── components/         # AppShell（导航/主题切换）、PageHero、NodeSwitcher（加速节点切换）
+│       ├── composables/        # useTheme（暗色模式）、useNodes（加速节点选择与链接联动）
 │       ├── utils/              # api.ts（唯一后端 API 封装层）、format.ts（格式化工具）
 │       └── pages/              # index.vue（GitHub 加速）、images.vue（离线镜像）、search.vue（搜索）
 ├── docs/                       # Astro Starlight 文档站（部署 GitHub Pages）
@@ -111,6 +112,7 @@ registerFrontendRoutes(router, cfg.Server.EnableFrontend)
 | 路由 | Handler | 说明 |
 |---|---|---|
 | `GET /ready` | main.go 内置 | 健康检查（version、uptime） |
+| `GET /api/nodes` | handlers/nodes.go | 加速节点列表（来自 `[[nodes]]` 配置，重启生效） |
 | `GET /api/search`、`GET /api/tags/:ns/:name` | handlers/search.go | Docker Hub 搜索与标签 |
 | `GET /api/image/download`、`/batch`、`/info` | handlers/imagetar.go | 离线镜像打包下载 |
 | `ANY /token`、`/token/*path` | handlers/docker.go | Docker 认证 token 代理（含缓存） |
@@ -166,11 +168,11 @@ main.go
 **文件划分**：`config.go`（Load/Get 门面 + atomic 快照）、`model.go`（命名结构体）、`types.go`（`ByteSize`/`Duration` 强类型）、`defaults.go`（默认值唯一来源）、`toml.go`（解码 + 未知字段告警）、`env.go`（环境变量覆盖）、`validate.go`（启动校验）。
 
 - **加载管线**：`DefaultConfig()` 内置默认值 → 按 `CONFIG_PATH` 环境变量（缺省 `./config.toml`）读 toml（文件不存在仅提示不报错；未知字段**告警不阻断**）→ `overrideFromEnv` 环境变量覆盖（非法值告警并忽略）→ `validate` 启动校验（致命错误聚合返回，启动终止）→ 切片/map 克隆后 `atomic.Pointer` 发布。
-- **环境变量**：`SERVER_HOST`、`SERVER_PORT`、`ENABLE_H2C`、`ENABLE_FRONTEND`、`MAX_FILE_SIZE`、`RATE_LIMIT`、`RATE_PERIOD_HOURS`、`IP_WHITELIST`/`IP_BLACKLIST`（逗号分隔，**设置即整体替换**文件名单，不再追加）、`ACCESS_PROXY`（允许设空清除）、`MAX_IMAGES`。
+- **环境变量**：`SERVER_HOST`、`SERVER_PORT`、`ENABLE_H2C`、`ENABLE_FRONTEND`、`MAX_FILE_SIZE`、`RATE_LIMIT`、`RATE_PERIOD_HOURS`、`IP_WHITELIST`/`IP_BLACKLIST`（逗号分隔，**设置即整体替换**文件名单，不再追加）、`ACCESS_PROXY`（允许设空清除）、`MAX_IMAGES`、`NODES`（逗号分隔 URL，设置即整体替换 `[[nodes]]`，name 自动取域名，允许设空清除）。
 - **强类型**：`server.fileSize` 为 `ByteSize`（裸整数或 `"2GB"`/`"1.5GiB"` 字符串），`tokenCache.defaultTTL` 为 `Duration`（时长字符串，加载期校验，不再运行期静默回退）。
 - **校验策略**：数值/枚举类错误（端口越界、非正数、非法 proxy scheme、registries.upstream 为空）致命；历史上可静默容忍的问题（IP 名单非法条目、非标准 authType）仅告警——避免存量部署升级后无法启动。
 - **并发模型**：快照在两次 `LoadConfig()` 之间不可变，`GetConfig()` 为单次原子读，无锁无深拷贝。**调用方禁止修改返回值**（含切片/map 元素）。
-- 配置段：`[server]`、`[rateLimit]`、`[security]`（IP 层黑白名单）、`[access]`（仓库层黑白名单 + proxy）、`[download]`、`[registries.*]`（多 Registry 映射）、`[tokenCache]`。
+- 配置段：`[server]`、`[rateLimit]`、`[security]`（IP 层黑白名单）、`[access]`（仓库层黑白名单 + proxy）、`[download]`、`[registries.*]`（多 Registry 映射）、`[tokenCache]`、`[[nodes]]`（前端展示的加速节点，url 非法致命、name 留空自动取域名、url 重复告警）。
 
 ### 5.2 handlers/docker.go — Registry v2 代理
 
@@ -235,6 +237,7 @@ main.go
 - 3 条文件式路由：`/`（GitHub 加速）、`/images`（离线镜像下载）、`/search`（镜像搜索/标签浏览），页面内 `useHead` 设置标题。
 - 样式入口 `app/assets/css/main.css`：`@import "tailwindcss"; @import "fuxsto-design/styles";`（库自带 `@theme` 桥接与 `dark:` 变体，消费方无需为其配置 Tailwind 扫描）。
 - 暗色模式：`useTheme` 组合式函数切换 `html.dark` + `localStorage`（key: `theme`），`app.head` 内联脚本在挂载前应用主题避免闪白。
+- 加速节点：`useNodes` 组合式函数拉取 `/api/nodes`（失败静默降级为当前站点），选中节点写入 `localStorage`（key: `node`）；`origin`/`host` 计算属性供页面生成加速链接，由 `NodeSwitcher` 组件在首页渲染切换器（节点列表为空时不渲染）。
 - 开发期 `nitro.devProxy`：`/api` → `http://127.0.0.1:5000`；生产期同源由 Gin 直接服务。
 - 构建产物输出 `../src/dist`（`nuxt generate`：index.html + assets/ + favicon.ico），被 Go embed。
 
@@ -264,6 +267,7 @@ Go 只显式注册了 `/`、`/images`、`/search` 三条 SPA 路由（`src/main.
 
 | 函数 | 端点 | 说明 |
 |---|---|---|
+| `fetchNodes()` | `GET /api/nodes` | 加速节点列表（`useNodes` 消费，首页切换器 + 链接联动） |
 | `searchImages(q, page, pageSize)` | `GET /api/search?q=&page=&page_size=` | 镜像搜索 |
 | `fetchTags(ns, name, page, pageSize)` | `GET /api/tags/{ns}/{name}?page=&page_size=` | 标签分页（含架构/os/size） |
 | `prepareSingleDownload(...)` | `GET /api/image/download?mode=prepare&...` | 返回一次性 `download_url` |

@@ -83,6 +83,24 @@ func overrideFromEnv(cfg *AppConfig) []string {
 	replaceList("IP_WHITELIST", &cfg.Security.WhiteList)
 	replaceList("IP_BLACKLIST", &cfg.Security.BlackList)
 
+	// NODES：逗号分隔的节点 URL 列表，设置即整体替换文件中的节点（name 自动取域名）
+	if val, ok := os.LookupEnv("NODES"); ok {
+		parts := strings.Split(val, ",")
+		nodes := make([]NodeConfig, 0, len(parts))
+		for _, part := range parts {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			if validNodeURL(part) {
+				nodes = append(nodes, NodeConfig{Name: nodeHost(part), URL: part})
+			} else {
+				warn("环境变量 NODES 中的条目 %q 非法（需 http:// 或 https:// 完整地址），已忽略", part)
+			}
+		}
+		cfg.Nodes = nodes
+	}
+
 	if val, ok := os.LookupEnv("ACCESS_PROXY"); ok {
 		val = strings.TrimSpace(val)
 		switch {

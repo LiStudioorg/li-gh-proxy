@@ -58,5 +58,6 @@ func DefaultConfig() *AppConfig {
 			Enabled:    true,
 			DefaultTTL: Duration(20 * time.Minute),
 		},
+		Nodes: []NodeConfig{},
 	}
 }

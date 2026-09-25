@@ -47,6 +47,12 @@ type TokenCacheConfig struct {
 	DefaultTTL Duration `toml:"defaultTTL"`
 }
 
+// NodeConfig 前端展示的加速节点（本服务的其他部署地址）
+type NodeConfig struct {
+	Name string `toml:"name" json:"name"`
+	URL  string `toml:"url" json:"url"`
+}
+
 // AppConfig 应用配置。
 //
 // 并发约定：LoadConfig 成功后通过 atomic 快照发布，GetConfig() 返回的快照
@@ -60,4 +66,5 @@ type AppConfig struct {
 	Download   DownloadConfig             `toml:"download"`
 	Registries map[string]RegistryMapping `toml:"registries"`
 	TokenCache TokenCacheConfig           `toml:"tokenCache"`
+	Nodes      []NodeConfig               `toml:"nodes"`
 }

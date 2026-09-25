@@ -127,6 +127,20 @@ export function fetchTags(namespace: string, name: string, page: number, pageSiz
   )
 }
 
+export interface NodeInfo {
+  name: string
+  url: string
+}
+
+export interface NodesResponse {
+  current: string
+  nodes: NodeInfo[]
+}
+
+export function fetchNodes() {
+  return getJSON<NodesResponse>('/api/nodes')
+}
+
 export function triggerDownload(url: string) {
   const link = document.createElement('a')
   link.href = url

@@ -196,6 +196,7 @@ func buildRouter(cfg *config.AppConfig) *gin.Engine {
 	handlers.InitImageTarRoutes(router)
 	registerFrontendRoutes(router, cfg.Server.EnableFrontend)
 	handlers.RegisterSearchRoute(router)
+	handlers.RegisterNodesRoute(router)
 
 	router.Any("/token", handlers.ProxyDockerAuthGin)
 	router.Any("/token/*path", handlers.ProxyDockerAuthGin)
