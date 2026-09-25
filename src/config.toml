@@ -91,6 +91,27 @@ enabled = true
 # 默认缓存时间（时长字符串，如 "20m"、"1h30m"、"90s"），启动时校验
 defaultTTL = "20m"
 
+# 友情链接页面（/links 与 /api/friends）
+# 文件路由：在 dataDir 目录下每个 *.toml 文件即一条友链，放入即新增、删除即移除，
+# 修改保存后约 5 秒内自动生效，无需重启。数据存于服务器本地，不入仓库。
+# dataDir 为相对路径时基于配置文件所在目录解析（Docker 部署请挂载对应目录）。
+# 文件字段：name（必填）、url（必填，http/https）、description（可选）、avatar（可选）
+# 示例（data/friends/example.toml）：
+#   name = "示例站点"
+#   url = "https://example.com"
+#   description = "站点简介"
+#   avatar = "https://example.com/avatar.png"
+[friends]
+enabled = false
+dataDir = "data/friends"
+
+# 赞助商卡片（展示在首页区块）
+# 同样采用文件路由，字段：name（必填）、url（必填）、logo（可选）、description（可选）、
+# tier（可选，排序权重，数字越小越靠前，缺省 0）
+[sponsors]
+enabled = false
+dataDir = "data/sponsors"
+
 # 加速节点列表（本服务的其他部署地址），配置后展示在前端页面供用户切换
 # name 留空时自动使用域名；url 必须为 http:// 或 https:// 完整地址
 # 留空（删除或注释全部节点）时前端仅使用当前站点域名

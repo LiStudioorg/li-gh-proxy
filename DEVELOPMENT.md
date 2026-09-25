@@ -67,10 +67,10 @@ li-gh-proxy/
 │   └── app/
 │       ├── app.vue             # 根组件（标题 + AppShell 外壳）
 │       ├── assets/css/main.css # tailwindcss + fuxsto-design/styles + Manrope 字体
-│       ├── components/         # AppShell（导航/主题切换）、PageHero、NodeSwitcher（加速节点切换）
-│       ├── composables/        # useTheme（暗色模式）、useNodes（加速节点选择与链接联动）
+│       ├── composables/        # useTheme（暗色模式）、useNodes（加速节点）、useFeatures（功能开关）
 │       ├── utils/              # api.ts（唯一后端 API 封装层）、format.ts（格式化工具）
-│       └── pages/              # index.vue（GitHub 加速）、images.vue（离线镜像）、search.vue（搜索）
+│       ├── components/         # AppShell、PageHero、NodeSwitcher、SponsorsSection（首页赞助商区块）
+│       └── pages/              # index.vue（GitHub 加速）、images.vue（离线镜像）、search.vue（搜索）、links.vue（友情链接）
 ├── docs/                       # Astro Starlight 文档站（部署 GitHub Pages）
 │   └── src/content/docs/       # 中文为根，en/ 为英文镜像
 ├── packaging/                  # nfpm 打包配置 + systemd/OpenRC service + logrotate
@@ -95,7 +95,7 @@ src/main.go  //go:embed all:dist        ← 编译期将整个 SPA 嵌入二进�
                          │
                          ▼
 registerFrontendRoutes(router, cfg.Server.EnableFrontend)
-  GET / 、/images、/search  → serveSPA（dist/index.html，Nuxt 客户端路由接管；Cache-Control: no-cache）
+  GET / 、/images、/search、/links  → serveSPA（dist/index.html，Nuxt 客户端路由接管；Cache-Control: no-cache）
   GET /assets/*filepath     → dist/assets（含 ".." 路径穿越防护；Cache-Control: public, max-age=31536000, immutable）
   GET /favicon.ico          → dist/favicon.ico（Cache-Control: public, max-age=604800）
   EnableFrontend=false      → 上述路由全部 404（纯代理模式）
@@ -115,10 +115,12 @@ registerFrontendRoutes(router, cfg.Server.EnableFrontend)
 | `GET /api/nodes` | handlers/nodes.go | 加速节点列表（来自 `[[nodes]]` 配置，重启生效） |
 | `GET /api/search`、`GET /api/tags/:ns/:name` | handlers/search.go | Docker Hub 搜索与标签 |
 | `GET /api/image/download`、`/batch`、`/info` | handlers/imagetar.go | 离线镜像打包下载 |
+| `GET /api/features` | handlers/content.go | 友链/赞助商功能开关状态（读 `[friends]`/`[sponsors]`） |
+| `GET /api/friends`、`GET /api/sponsors` | handlers/content.go | 本地文件驱动的内容列表（未启用返回 404） |
 | `ANY /token`、`/token/*path` | handlers/docker.go | Docker 认证 token 代理（含缓存） |
 | `ANY /v2/*path` | handlers/docker.go | Docker Registry v2 代理 |
 | `NoRoute`（其余全部） | handlers/github.go | GitHub / HuggingFace 代理兜底 |
-| `/`、`/images`、`/search`、`/assets/*` | main.go | 内嵌 SPA（可关闭） |
+| `/`、`/images`、`/search`、`/links`、`/assets/*` | main.go | 内嵌 SPA（可关闭） |
 
 > 前端为 Nuxt 文件式路由，但 Go 侧 SPA 路由是**显式枚举**的——新增页面必须同步 `registerFrontendRoutes`（见 6.4）。
 
@@ -168,11 +170,11 @@ main.go
 **文件划分**：`config.go`（Load/Get 门面 + atomic 快照）、`model.go`（命名结构体）、`types.go`（`ByteSize`/`Duration` 强类型）、`defaults.go`（默认值唯一来源）、`toml.go`（解码 + 未知字段告警）、`env.go`（环境变量覆盖）、`validate.go`（启动校验）。
 
 - **加载管线**：`DefaultConfig()` 内置默认值 → 按 `CONFIG_PATH` 环境变量（缺省 `./config.toml`）读 toml（文件不存在仅提示不报错；未知字段**告警不阻断**）→ `overrideFromEnv` 环境变量覆盖（非法值告警并忽略）→ `validate` 启动校验（致命错误聚合返回，启动终止）→ 切片/map 克隆后 `atomic.Pointer` 发布。
-- **环境变量**：`SERVER_HOST`、`SERVER_PORT`、`ENABLE_H2C`、`ENABLE_FRONTEND`、`MAX_FILE_SIZE`、`RATE_LIMIT`、`RATE_PERIOD_HOURS`、`IP_WHITELIST`/`IP_BLACKLIST`（逗号分隔，**设置即整体替换**文件名单，不再追加）、`ACCESS_PROXY`（允许设空清除）、`MAX_IMAGES`、`NODES`（逗号分隔 URL，设置即整体替换 `[[nodes]]`，name 自动取域名，允许设空清除）。
+- **环境变量**：`SERVER_HOST`、`SERVER_PORT`、`ENABLE_H2C`、`ENABLE_FRONTEND`、`MAX_FILE_SIZE`、`RATE_LIMIT`、`RATE_PERIOD_HOURS`、`IP_WHITELIST`/`IP_BLACKLIST`（逗号分隔，**设置即整体替换**文件名单，不再追加）、`ACCESS_PROXY`（允许设空清除）、`MAX_IMAGES`、`NODES`（逗号分隔 URL，设置即整体替换 `[[nodes]]`，name 自动取域名，允许设空清除）、`FRIENDS_ENABLED`/`SPONSORS_ENABLED`（布尔）、`FRIENDS_DATA_DIR`/`SPONSORS_DATA_DIR`（设置即替换 dataDir）。
 - **强类型**：`server.fileSize` 为 `ByteSize`（裸整数或 `"2GB"`/`"1.5GiB"` 字符串），`tokenCache.defaultTTL` 为 `Duration`（时长字符串，加载期校验，不再运行期静默回退）。
 - **校验策略**：数值/枚举类错误（端口越界、非正数、非法 proxy scheme、registries.upstream 为空）致命；历史上可静默容忍的问题（IP 名单非法条目、非标准 authType）仅告警——避免存量部署升级后无法启动。
 - **并发模型**：快照在两次 `LoadConfig()` 之间不可变，`GetConfig()` 为单次原子读，无锁无深拷贝。**调用方禁止修改返回值**（含切片/map 元素）。
-- 配置段：`[server]`、`[rateLimit]`、`[security]`（IP 层黑白名单）、`[access]`（仓库层黑白名单 + proxy）、`[download]`、`[registries.*]`（多 Registry 映射）、`[tokenCache]`、`[[nodes]]`（前端展示的加速节点，url 非法致命、name 留空自动取域名、url 重复告警）。
+- 配置段：`[server]`、`[rateLimit]`、`[security]`（IP 层黑白名单）、`[access]`（仓库层黑白名单 + proxy）、`[download]`、`[registries.*]`（多 Registry 映射）、`[tokenCache]`、`[[nodes]]`（前端展示的加速节点，url 非法致命、name 留空自动取域名、url 重复告警）、`[friends]` / `[sponsors]`（本地内容功能开关，见 5.7）。
 
 ### 5.2 handlers/docker.go — Registry v2 代理
 
@@ -227,6 +229,17 @@ main.go
 | `http_client.go` | HTTP 客户端 | `globalHTTPClient` 无整体超时（大文件流式必需）、连接池 1000；`searchHTTPClient` 10s 超时；SOCKS5 经 `os.Setenv` + `ProxyFromEnvironment` 实现 |
 | `proxy_shell.go` | 脚本 URL 改写 | gzip 魔数探测、10MB 上限防滥用、防递归改写（URL 已含本机 host 则跳过） |
 
+### 5.7 handlers/content.go — 友链 / 赞助商（文件路由式本地内容）
+
+**数据形态**：功能开启后，数据以「一条一个 TOML 文件」存放在服务器本地 dataDir（`friends.*.dataDir` / `sponsors.*.dataDir`），**不入仓库**；文件名（去扩展名）即 slug，放入文件即新增、删除文件即移除。目录不存在视为空内容；单个文件解析/校验失败仅告警跳过（name/url 必填，url 需 http/https）。
+
+- **友链字段**：`name`、`url`（必填）；`description`、`avatar`（可选）。按文件名排序。
+- **赞助商字段**：`name`、`url`（必填）；`logo`、`description`、`tier`（可选，排序权重，数字越小越靠前，缺省 0，同 tier 按文件名排序）。
+- **热加载**：`contentLoader[T]` 泛型加载器，5s TTL 缓存（与 config 副本缓存机制对齐），缓存以 dataDir 为键——切换目录立即失效。返回浅拷贝防止调用方污染缓存。
+- **dataDir 解析**：相对路径统一基于**配置文件所在目录**解析（deb → `/etc/li-gh-proxy/data/...`、Docker → `/app/data/...`、本地开发 → `src/data/...`），在 `LoadConfig` 的 `resolveContentDirs` 中完成，快照内保存绝对路径。
+- **API**：`/api/features` 返回两功能开关；`/api/friends`、`/api/sponsors` 在功能关闭时返回 404（`code: FEATURE_DISABLED`），前端据此隐藏导航入口与首页区块。
+- **默认关闭**：`enabled = false`，需在配置文件或环境变量中显式开启。
+
 ---
 
 ## 6. 前端（web/）
@@ -234,10 +247,11 @@ main.go
 ### 6.1 技术与结构
 
 - **Nuxt 4**（`ssr: false` 纯 SPA，Nuxt 4 默认 `app/` 目录结构）+ **fuxsto-design**（zinc 单色、Tailwind CSS v4 组件库，样式自包含、暗色模式开箱即用）+ lucide-vue-next 图标，无状态管理库，`app/utils/api.ts` 为唯一 API 封装（fetch + JSON 错误解析 + `ApiError`）。
-- 3 条文件式路由：`/`（GitHub 加速）、`/images`（离线镜像下载）、`/search`（镜像搜索/标签浏览），页面内 `useHead` 设置标题。
+- 3 条核心文件式路由：`/`（GitHub 加速）、`/images`（离线镜像下载）、`/search`（镜像搜索/标签浏览），另有 `/links`（友情链接，按 `[friends].enabled` 条件渲染导航入口），页面内 `useHead` 设置标题。
 - 样式入口 `app/assets/css/main.css`：`@import "tailwindcss"; @import "fuxsto-design/styles";`（库自带 `@theme` 桥接与 `dark:` 变体，消费方无需为其配置 Tailwind 扫描）。
 - 暗色模式：`useTheme` 组合式函数切换 `html.dark` + `localStorage`（key: `theme`），`app.head` 内联脚本在挂载前应用主题避免闪白。
 - 加速节点：`useNodes` 组合式函数拉取 `/api/nodes`（失败静默降级为当前站点），选中节点写入 `localStorage`（key: `node`）；`origin`/`host` 计算属性供页面生成加速链接，由 `NodeSwitcher` 组件在首页渲染切换器（节点列表为空时不渲染）。
+- 功能开关：`useFeatures` 组合式函数拉取 `/api/features`（`useState` 跨组件共享单次请求，失败按全部关闭处理）；`AppShell` 依据 `friends` 开关决定是否渲染「友情链接」导航项，首页 `SponsorsSection` 组件依据 `/api/sponsors` 是否有数据决定区块显隐（未启用 404 / 无数据均不渲染）。
 - 开发期 `nitro.devProxy`：`/api` → `http://127.0.0.1:5000`；生产期同源由 Gin 直接服务。
 - 构建产物输出 `../src/dist`（`nuxt generate`：index.html + assets/ + favicon.ico），被 Go embed。
 
@@ -259,7 +273,7 @@ main.go
 
 ### 6.4 ⚠️ 新增/修改前端路由必须同步 Go 侧
 
-Go 只显式注册了 `/`、`/images`、`/search` 三条 SPA 路由（`src/main.go` 的 `registerFrontendRoutes`）。新增页面（如 `/about` → `app/pages/about.vue`）后，其余未注册路径会落入 NoRoute 的 GitHub 代理兜底（403）。**必须同步修改 `registerFrontendRoutes` 并补充 `main_test.go` 用例**；同理，前端资源约定 `buildAssetsDir: 'assets/'` 不可随意更改。
+Go 只显式注册了 `/`、`/images`、`/search`、`/links` 四条 SPA 路由（`src/main.go` 的 `registerFrontendRoutes`）。新增页面（如 `/about` → `app/pages/about.vue`）后，其余未注册路径会落入 NoRoute 的 GitHub 代理兜底（403）。**必须同步修改 `registerFrontendRoutes` 并补充 `main_test.go` 用例**；同理，前端资源约定 `buildAssetsDir: 'assets/'` 不可随意更改。
 
 ---
 
@@ -268,6 +282,9 @@ Go 只显式注册了 `/`、`/images`、`/search` 三条 SPA 路由（`src/main.
 | 函数 | 端点 | 说明 |
 |---|---|---|
 | `fetchNodes()` | `GET /api/nodes` | 加速节点列表（`useNodes` 消费，首页切换器 + 链接联动） |
+| `fetchFeatures()` | `GET /api/features` | 友链/赞助商功能开关（`useFeatures` 消费，导航条件渲染） |
+| `fetchFriends()` | `GET /api/friends` | 友情链接列表（`/links` 页面消费，未启用 404） |
+| `fetchSponsors()` | `GET /api/sponsors` | 赞助商列表（首页 `SponsorsSection` 消费，未启用 404） |
 | `searchImages(q, page, pageSize)` | `GET /api/search?q=&page=&page_size=` | 镜像搜索 |
 | `fetchTags(ns, name, page, pageSize)` | `GET /api/tags/{ns}/{name}?page=&page_size=` | 标签分页（含架构/os/size） |
 | `prepareSingleDownload(...)` | `GET /api/image/download?mode=prepare&...` | 返回一次性 `download_url` |
@@ -313,7 +330,7 @@ cd src
 go test ./...     # 单测 + main_test.go 集成测试（httptest 全栈）
 ```
 
-测试覆盖 8 个集成场景：`/ready`、前端禁用 404、单/批量下载 prepare 签发 token、批量数量上限、GitHub 域名白名单校验、`/v2/` ping、搜索缺参 400、SPA 回退。各模块另有配套单测。
+测试覆盖 8 个集成场景：`/ready`、前端禁用 404、单/批量下载 prepare 签发 token、批量数量上限、GitHub 域名白名单校验、`/v2/` ping、搜索缺参 400、SPA 回退；以及本地内容功能场景：`/links` SPA 路由、`/api/features` 开关、友链文件加载（非法/非 toml 文件跳过）、友链未启用 404、赞助商 tier 排序。各模块另有配套单测。
 
 > 前端暂无测试框架与 lint 配置，质量门禁为 `npm run typecheck`（vue-tsc strict）+ `npm run build`（构建失败即回退）。
 
@@ -326,6 +343,7 @@ go test ./...     # 单测 + main_test.go 集成测试（httptest 全栈）
 | 前端 dev 页面 `/api/*` 全部失败 | 后端未启动或未监听 `127.0.0.1:5000`（devProxy 目标） |
 | 访问新增前端页面返回 403 | 路径未在 `registerFrontendRoutes` 注册，落入 GitHub 代理兜底，见 6.4 |
 | Docker 镜像内配置不生效 | 挂载路径必须覆盖 `/app/config.toml`；镜像内缺省配置是 `src/config.toml` 模板 |
+| 友链/赞助商页面为空或导航不显示 | 检查 `[friends]`/`[sponsors]` 的 `enabled` 是否开启；dataDir 相对路径基于配置文件所在目录解析，确认目录存在且含合法 `*.toml`（解析失败条目会记录在服务日志中） |
 
 ---
 
@@ -379,3 +397,4 @@ gh run watch --exit-status     # 跟踪进度
 7. **lockfile 即契约**：Docker 与 CI 均用 `npm ci` 安装（严格校验 `package-lock.json`），升级依赖必须在本地完整跑通 `npm ci && npm run build` 后再提交锁文件。
 8. **前端产物契约**：`nuxt.config.ts` 中 `ssr: false`、`buildAssetsDir: 'assets/'`、`nitro.output.publicDir → ../src/dist` 三项与 Go embed 一一对应，改动任一项都会破坏单二进制交付。
 9. **静态资源加速**：gzip 预压缩在启动时完成（见 4.1）；`/assets/*` 文件名含内容 hash，可 `immutable` 长缓存，因此 `index.html` 必须保持 `no-cache`，否则发版后客户端会拿旧 hash 引用而 404。
+10. **本地内容不入仓库**：友链/赞助商数据（`[friends]`/`[sponsors]` 的 dataDir，默认 `data/friends`、`data/sponsors`）只存在于部署服务器本地，已在 gitignore 中排除 `/data/` 与 `/src/data/`；一条一个 TOML 文件，5s TTL 热加载（见 5.7）。

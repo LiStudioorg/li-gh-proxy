@@ -61,7 +61,7 @@ func validate(cfg *AppConfig) ([]string, error) {
 		node.Name = strings.TrimSpace(node.Name)
 		node.URL = strings.TrimSpace(node.URL)
 		if !validNodeURL(node.URL) {
-			errs = append(errs, fmt.Sprintf("nodes[%d].url=%q 非法（需 http:// 或 https:// 完整地址）", i, node.URL))
+			errs = append(errs, fmt.Sprintf("nodes[%d].url=%q 非法（需 http:// 或 https:// 完整地址，不带路径、凭据、查询参数或片段）", i, node.URL))
 			continue
 		}
 		if node.Name == "" {
@@ -83,6 +83,14 @@ func validate(cfg *AppConfig) ([]string, error) {
 	}
 	checkIPList("security.whiteList", cfg.Security.WhiteList)
 	checkIPList("security.blackList", cfg.Security.BlackList)
+
+	// 内容功能：目录缺失/为空不致命（管理员可后补数据文件），仅在启用但目录未配置时提示
+	if cfg.Friends.Enabled && cfg.Friends.DataDir == "" {
+		warns = append(warns, "friends.enabled=true 但 friends.dataDir 为空，/api/friends 将始终返回空列表")
+	}
+	if cfg.Sponsors.Enabled && cfg.Sponsors.DataDir == "" {
+		warns = append(warns, "sponsors.enabled=true 但 sponsors.dataDir 为空，/api/sponsors 将始终返回空列表")
+	}
 
 	if len(errs) > 0 {
 		return warns, fmt.Errorf("配置校验失败:\n  - %s", strings.Join(errs, "\n  - "))
@@ -116,10 +124,18 @@ var validNodeSchemes = map[string]bool{
 
 func validNodeURL(raw string) bool {
 	u, err := url.Parse(raw)
-	if err != nil || u.Scheme == "" || u.Host == "" || u.Fragment != "" || u.RawQuery != "" {
+	if err != nil || u.Scheme == "" || u.Host == "" {
 		return false
 	}
-	return validNodeSchemes[strings.ToLower(u.Scheme)]
+	if !validNodeSchemes[strings.ToLower(u.Scheme)] {
+		return false
+	}
+	// 前端仅使用 origin/host 生成加速链接，路径/凭据/查询/片段会被静默丢弃，
+	// 直接在启动期拒绝，避免配置通过但前端生成错误链接
+	if (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" || u.User != nil {
+		return false
+	}
+	return true
 }
 
 func nodeHost(raw string) string {

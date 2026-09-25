@@ -59,5 +59,13 @@ func DefaultConfig() *AppConfig {
 			DefaultTTL: Duration(20 * time.Minute),
 		},
 		Nodes: []NodeConfig{},
+		Friends: ContentFeedConfig{
+			Enabled: false,
+			DataDir: "data/friends",
+		},
+		Sponsors: ContentFeedConfig{
+			Enabled: false,
+			DataDir: "data/sponsors",
+		},
 	}
 }

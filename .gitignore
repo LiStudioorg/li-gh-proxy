@@ -23,6 +23,10 @@ web/pnpm-debug.log*
 # Frontend build output embedded by Go
 src/dist/
 
+# Local content data (friends/sponsors) — 服务器本地数据，不入仓库
+/data/
+/src/data/
+
 # Docs site (docs/)
 docs/node_modules/
 docs/dist/

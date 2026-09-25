@@ -153,6 +153,7 @@ func registerFrontendRoutes(router *gin.Engine, enabled bool) {
 		router.GET("/", notFound)
 		router.GET("/images", notFound)
 		router.GET("/search", notFound)
+		router.GET("/links", notFound)
 		router.GET("/assets/*filepath", notFound)
 		router.GET("/favicon.ico", notFound)
 		return
@@ -161,6 +162,7 @@ func registerFrontendRoutes(router *gin.Engine, enabled bool) {
 	router.GET("/", serveSPA)
 	router.GET("/images", serveSPA)
 	router.GET("/search", serveSPA)
+	router.GET("/links", serveSPA)
 	router.GET("/favicon.ico", func(c *gin.Context) {
 		c.Header("Cache-Control", "public, max-age=604800")
 		serveEmbedFile(c, "dist/favicon.ico")
@@ -197,6 +199,7 @@ func buildRouter(cfg *config.AppConfig) *gin.Engine {
 	registerFrontendRoutes(router, cfg.Server.EnableFrontend)
 	handlers.RegisterSearchRoute(router)
 	handlers.RegisterNodesRoute(router)
+	handlers.RegisterContentRoutes(router)
 
 	router.Any("/token", handlers.ProxyDockerAuthGin)
 	router.Any("/token/*path", handlers.ProxyDockerAuthGin)

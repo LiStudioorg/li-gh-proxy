@@ -1,4 +1,4 @@
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number
 
   constructor(message: string, status: number) {
@@ -139,6 +139,48 @@ export interface NodesResponse {
 
 export function fetchNodes() {
   return getJSON<NodesResponse>('/api/nodes')
+}
+
+export interface FriendLink {
+  slug: string
+  name: string
+  url: string
+  description?: string
+  avatar?: string
+}
+
+export interface FriendsResponse {
+  items: FriendLink[]
+}
+
+export interface Sponsor {
+  slug: string
+  name: string
+  url: string
+  logo?: string
+  description?: string
+  tier: number
+}
+
+export interface SponsorsResponse {
+  items: Sponsor[]
+}
+
+export interface FeaturesResponse {
+  friends: boolean
+  sponsors: boolean
+}
+
+export function fetchFriends() {
+  return getJSON<FriendsResponse>('/api/friends')
+}
+
+export function fetchSponsors() {
+  return getJSON<SponsorsResponse>('/api/sponsors')
+}
+
+export function fetchFeatures() {
+  return getJSON<FeaturesResponse>('/api/features')
 }
 
 export function triggerDownload(url: string) {

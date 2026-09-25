@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { Container, Github, Menu, Moon, Rocket, Search, Sun, X, Zap } from 'lucide-vue-next'
+import { Container, Github, Link2, Menu, Moon, Rocket, Search, Sun, X, Zap } from 'lucide-vue-next'
 import Button from 'fuxsto-design/button'
 
 const { isDark, init, toggle } = useTheme()
+const { features, load: loadFeatures } = useFeatures()
 
-const links = [
-  { to: '/', label: 'GitHub 加速', icon: Rocket },
-  { to: '/images', label: '离线镜像', icon: Container },
-  { to: '/search', label: '镜像搜索', icon: Search },
-] as const
+// 友情链接入口仅在服务端启用对应功能后展示（/api/features）
+const navLinks = computed(() => {
+  const items = [
+    { to: '/', label: 'GitHub 加速', icon: Rocket },
+    { to: '/images', label: '离线镜像', icon: Container },
+    { to: '/search', label: '镜像搜索', icon: Search },
+  ]
+  if (features.value.friends) {
+    items.push({ to: '/links', label: '友情链接', icon: Link2 })
+  }
+  return items
+})
 
 const route = useRoute()
 const menuOpen = ref(false)
@@ -19,6 +27,7 @@ function closeMenu() {
 
 onMounted(() => {
   init()
+  loadFeatures()
 })
 </script>
 
@@ -39,7 +48,7 @@ onMounted(() => {
 
         <nav class="hidden items-center gap-1.5 md:flex">
           <NuxtLink
-            v-for="link in links"
+            v-for="link in navLinks"
             :key="link.to"
             :to="link.to"
             class="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[15px] transition-colors duration-150"
@@ -94,7 +103,7 @@ onMounted(() => {
         <div v-if="menuOpen" class="border-t border-border px-5 py-2 md:hidden">
           <div class="flex flex-col gap-1">
             <NuxtLink
-              v-for="link in links"
+              v-for="link in navLinks"
               :key="link.to"
               :to="link.to"
               class="inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[15px] transition-colors"

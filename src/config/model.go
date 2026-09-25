@@ -53,6 +53,14 @@ type NodeConfig struct {
 	URL  string `toml:"url" json:"url"`
 }
 
+// ContentFeedConfig 本地文件驱动的内容功能（友链 / 赞助商卡片）通用配置。
+// 数据以「一条一个 TOML 文件」的形式存放在服务器本地 dataDir 中，不入仓库；
+// dataDir 相对路径基于配置文件所在目录解析（见 LoadConfig 的 resolveContentDirs）。
+type ContentFeedConfig struct {
+	Enabled bool   `toml:"enabled"`
+	DataDir string `toml:"dataDir"`
+}
+
 // AppConfig 应用配置。
 //
 // 并发约定：LoadConfig 成功后通过 atomic 快照发布，GetConfig() 返回的快照
@@ -67,4 +75,6 @@ type AppConfig struct {
 	Registries map[string]RegistryMapping `toml:"registries"`
 	TokenCache TokenCacheConfig           `toml:"tokenCache"`
 	Nodes      []NodeConfig               `toml:"nodes"`
+	Friends    ContentFeedConfig          `toml:"friends"`
+	Sponsors   ContentFeedConfig          `toml:"sponsors"`
 }

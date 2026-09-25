@@ -185,5 +185,7 @@ function onOpen() {
         </div>
       </div>
     </section>
+
+    <SponsorsSection />
   </div>
 </template>

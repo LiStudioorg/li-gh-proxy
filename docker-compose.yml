@@ -8,6 +8,8 @@ services:
     volumes:
       # 首次部署：cp src/config.toml ./config.toml 后按需修改
       - ./config.toml:/app/config.toml:ro
+      # 友链/赞助商数据目录（文件路由：每个 *.toml 一条记录，启用 [friends]/[sponsors] 后在 ./data 下维护）
+      - ./data:/app/data
     logging:
       driver: json-file
       options:

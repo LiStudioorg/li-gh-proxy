@@ -42,6 +42,16 @@ func overrideFromEnv(cfg *AppConfig) []string {
 	}
 	setBool("ENABLE_H2C", &cfg.Server.EnableH2C)
 	setBool("ENABLE_FRONTEND", &cfg.Server.EnableFrontend)
+	setBool("FRIENDS_ENABLED", &cfg.Friends.Enabled)
+	setBool("SPONSORS_ENABLED", &cfg.Sponsors.Enabled)
+
+	setDir := func(name string, target *string) {
+		if val, ok := os.LookupEnv(name); ok {
+			*target = strings.TrimSpace(val)
+		}
+	}
+	setDir("FRIENDS_DATA_DIR", &cfg.Friends.DataDir)
+	setDir("SPONSORS_DATA_DIR", &cfg.Sponsors.DataDir)
 
 	if val := os.Getenv("MAX_FILE_SIZE"); val != "" {
 		var size ByteSize

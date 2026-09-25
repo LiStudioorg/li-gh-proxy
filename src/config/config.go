@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 )
@@ -51,6 +52,11 @@ func LoadConfig() error {
 
 	printWarnings(overrideFromEnv(cfg))
 
+	// 内容目录（友链/赞助商）相对路径统一基于配置文件所在目录解析：
+	// deb/rpm 部署 → /etc/li-gh-proxy/data/...；Docker → /app/data/...；本地开发 → src/data/...
+	// 必须在 validate 之前完成，保证快照中存储的是最终绝对路径
+	resolveContentDirs(cfg, filepath.Dir(path))
+
 	warnings, err := validate(cfg)
 	printWarnings(warnings)
 	if err != nil {
@@ -73,6 +79,21 @@ func configFilePath() string {
 		return path
 	}
 	return "config.toml"
+}
+
+// resolveContentDirs 将 friends/sponsors 的 dataDir 中的相对路径
+// 转换为基于 configDir 的绝对路径；绝对路径与空值原样保留。
+func resolveContentDirs(cfg *AppConfig, configDir string) {
+	resolve := func(dir *string) {
+		val := strings.TrimSpace(*dir)
+		if val == "" || filepath.IsAbs(val) {
+			*dir = val
+			return
+		}
+		*dir = filepath.Clean(filepath.Join(configDir, val))
+	}
+	resolve(&cfg.Friends.DataDir)
+	resolve(&cfg.Sponsors.DataDir)
 }
 
 // freeze 克隆全部可变字段，使快照与解码过程中的临时状态完全隔离

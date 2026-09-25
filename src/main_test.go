@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -71,7 +72,7 @@ func TestFrontendDisabledRoutesReturnNotFound(t *testing.T) {
 enableFrontend = false
 `)
 
-	for _, path := range []string{"/", "/images", "/search", "/favicon.ico"} {
+	for _, path := range []string{"/", "/images", "/search", "/links", "/favicon.ico"} {
 		w := performRequest(router, http.MethodGet, path, "")
 		if w.Code != http.StatusNotFound {
 			t.Fatalf("%s status = %d, want 404", path, w.Code)
@@ -192,6 +193,170 @@ enableFrontend = true
 	}
 	if !strings.Contains(w.Body.String(), `<div id="__nuxt">`) {
 		t.Fatalf("SPA shell missing: %s", w.Body.String())
+	}
+
+	w = performRequest(router, http.MethodGet, "/links", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("/links status = %d, want 200", w.Code)
+	}
+	if !strings.Contains(w.Header().Get("Content-Type"), "text/html") {
+		t.Fatalf("/links content-type = %q, want text/html", w.Header().Get("Content-Type"))
+	}
+}
+
+// writeContentFile 在 dir 下写入内容数据文件（友链/赞助商的「文件路由」测试辅助）
+func writeContentFile(t *testing.T, dir, name, content string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestFeaturesAPIReflectsConfig(t *testing.T) {
+	router := newTestRouter(t, `
+[friends]
+enabled = true
+`)
+
+	w := performRequest(router, http.MethodGet, "/api/features", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", w.Code, w.Body.String())
+	}
+
+	var got struct {
+		Friends  bool `json:"friends"`
+		Sponsors bool `json:"sponsors"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if !got.Friends || got.Sponsors {
+		t.Fatalf("features = %+v, want friends=true sponsors=false", got)
+	}
+}
+
+func TestFriendsAPILoadsFromLocalFiles(t *testing.T) {
+	dataDir := filepath.ToSlash(filepath.Join(t.TempDir(), "data", "friends"))
+	writeContentFile(t, dataDir, "b-site.toml", `
+name = "B 站点"
+url = "https://b.example.com"
+description = "按文件名排序在后面"
+`)
+	writeContentFile(t, dataDir, "a-site.toml", `
+name = "A 站点"
+url = "https://a.example.com"
+avatar = "https://a.example.com/a.png"
+`)
+	// 非法条目（缺 url）应被跳过且不影响其他条目
+	writeContentFile(t, dataDir, "broken.toml", `name = "Broken"`)
+	// 非 .toml 文件应被忽略
+	writeContentFile(t, dataDir, "readme.txt", "ignore me")
+
+	router := newTestRouter(t, fmt.Sprintf(`
+[friends]
+enabled = true
+dataDir = "%s"
+`, dataDir))
+
+	w := performRequest(router, http.MethodGet, "/api/friends", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", w.Code, w.Body.String())
+	}
+
+	var got struct {
+		Items []struct {
+			Slug        string `json:"slug"`
+			Name        string `json:"name"`
+			URL         string `json:"url"`
+			Description string `json:"description"`
+			Avatar      string `json:"avatar"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Items) != 2 {
+		t.Fatalf("items = %+v, want 2 entries (broken/non-toml files skipped)", got.Items)
+	}
+	if got.Items[0].Slug != "a-site" || got.Items[0].Name != "A 站点" || got.Items[0].Avatar == "" {
+		t.Fatalf("items[0] = %+v", got.Items[0])
+	}
+	if got.Items[1].Slug != "b-site" || got.Items[1].URL != "https://b.example.com" {
+		t.Fatalf("items[1] = %+v", got.Items[1])
+	}
+}
+
+func TestFriendsAPIDisabledReturns404(t *testing.T) {
+	router := newTestRouter(t, "")
+
+	w := performRequest(router, http.MethodGet, "/api/friends", "")
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404; body=%s", w.Code, w.Body.String())
+	}
+
+	var got map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["code"] != "FEATURE_DISABLED" {
+		t.Fatalf("response = %#v, want code=FEATURE_DISABLED", got)
+	}
+}
+
+func TestSponsorsAPISortedByTier(t *testing.T) {
+	dataDir := filepath.ToSlash(filepath.Join(t.TempDir(), "data", "sponsors"))
+	writeContentFile(t, dataDir, "x.toml", `
+name = "X Inc"
+url = "https://x.example.com"
+tier = 2
+`)
+	writeContentFile(t, dataDir, "a.toml", `
+name = "A Inc"
+url = "https://a.example.com"
+tier = 1
+`)
+	writeContentFile(t, dataDir, "b.toml", `
+name = "B Inc"
+url = "https://b.example.com"
+tier = 1
+`)
+	// 未填写 tier 时默认 0，应排在最前
+	writeContentFile(t, dataDir, "m.toml", `
+name = "M Inc"
+url = "https://m.example.com"
+`)
+
+	router := newTestRouter(t, fmt.Sprintf(`
+[sponsors]
+enabled = true
+dataDir = "%s"
+`, dataDir))
+
+	w := performRequest(router, http.MethodGet, "/api/sponsors", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", w.Code, w.Body.String())
+	}
+
+	var got struct {
+		Items []struct {
+			Slug string `json:"slug"`
+			Tier int    `json:"tier"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	wantOrder := []string{"m", "a", "b", "x"}
+	if len(got.Items) != len(wantOrder) {
+		t.Fatalf("items = %+v, want %d entries", got.Items, len(wantOrder))
+	}
+	for i, slug := range wantOrder {
+		if got.Items[i].Slug != slug {
+			t.Fatalf("items[%d].slug = %q, want %q (order: tier asc, tie by slug)", i, got.Items[i].Slug, slug)
+		}
 	}
 }
 
