@@ -15,7 +15,7 @@ import {
 } from '~/utils/api'
 import { copyText, errorMessage, formatArchs, formatNumber, formatSize, formatTimeAgo } from '~/utils/format'
 
-useHead({ title: '镜像搜索 · HubProxy' })
+useHead({ title: '镜像搜索 · li-gh-proxy' })
 
 interface RepoView {
   raw: Repository

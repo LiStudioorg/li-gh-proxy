@@ -1,9 +1,9 @@
 ﻿---
 title: Docker 镜像加速
-description: 配置 Docker 客户端使用 HubProxy 加速镜像拉取。
+description: 配置 Docker 客户端使用 li-gh-proxy 加速镜像拉取。
 ---
 
-HubProxy 兼容 Docker Registry API v2，可作为 Docker Hub 及多种第三方 Registry 的镜像加速入口。
+li-gh-proxy 兼容 Docker Registry API v2，可作为 Docker Hub 及多种第三方 Registry 的镜像加速入口。
 
 ## 配置 Docker 客户端
 
@@ -62,7 +62,7 @@ curl "https://example.com/api/tags/library/nginx"
 - 拉取一个镜像会请求多个 layer，每个 HTTP 请求均计入 IP 限流配额
 - 公网服务建议配置 `[access].whiteList` 限制可代理的镜像
 - 配合反向代理时确保正确传递客户端 IP，详见 [反向代理配置](/deployment/reverse-proxy/)
-- 当前版本对 Registry 使用匿名拉取，**无法**通过 HubProxy 拉取需要认证的私有镜像
+- 当前版本对 Registry 使用匿名拉取，**无法**通过 li-gh-proxy 拉取需要认证的私有镜像
 
 ## 其他环境
 

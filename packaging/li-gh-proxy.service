@@ -1,5 +1,5 @@
 [Unit]
-Description=hubproxy
+Description=li-gh-proxy
 After=network-online.target
 Wants=network-online.target
 
@@ -7,13 +7,13 @@ Wants=network-online.target
 Type=simple
 User=root
 Group=root
-Environment=CONFIG_PATH=/etc/hubproxy/config.toml
-ExecStart=/usr/bin/hubproxy
+Environment=CONFIG_PATH=/etc/li-gh-proxy/config.toml
+ExecStart=/usr/bin/li-gh-proxy
 Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=hubproxy
+SyslogIdentifier=li-gh-proxy
 
 [Install]
 WantedBy=multi-user.target

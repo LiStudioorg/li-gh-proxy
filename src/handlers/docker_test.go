@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"hubproxy/config"
+	"li-gh-proxy/config"
 )
 
 func TestParseRegistryPath(t *testing.T) {

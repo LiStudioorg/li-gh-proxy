@@ -1,9 +1,9 @@
 ﻿---
 title: Security Overview
-description: HubProxy security model, risks, and best practices.
+description: li-gh-proxy security model, risks, and best practices.
 ---
 
-HubProxy is an open proxy service — improper deployment creates abuse risk. Follow these practices to reduce exposure.
+li-gh-proxy is an open proxy service — improper deployment creates abuse risk. Follow these practices to reduce exposure.
 
 ## Core Mechanisms
 
@@ -18,7 +18,7 @@ HubProxy is an open proxy service — improper deployment creates abuse risk. Fo
 
 ## Not Built In
 
-HubProxy has **no** admin login, Basic Auth, API keys, or Prometheus `/metrics`. The web UI is a public SPA — security relies on network placement and configuration.
+li-gh-proxy has **no** admin login, Basic Auth, API keys, or Prometheus `/metrics`. The web UI is a public SPA — security relies on network placement and configuration.
 
 ## Main Risks
 
@@ -28,7 +28,7 @@ HubProxy has **no** admin login, Basic Auth, API keys, or Prometheus `/metrics`.
 
 ## Recommendations
 
-- Use [Recommended Architecture](/en/deployment/architecture/): CDN (optional) → reverse proxy → HubProxy
+- Use [Recommended Architecture](/en/deployment/architecture/): CDN (optional) → reverse proxy → li-gh-proxy
 - Configure `[access].whiteList` for public services
 - Overwrite `X-Forwarded-For`, `X-Real-IP`, and `X-Forwarded-Host` at the proxy
 - Expose public services through a reverse proxy instead of port 5000 directly

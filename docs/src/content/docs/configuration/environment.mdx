@@ -1,9 +1,9 @@
 ﻿---
 title: 环境变量
-description: HubProxy 支持的环境变量说明。
+description: li-gh-proxy 支持的环境变量说明。
 ---
 
-环境变量在加载 `config.toml` 之后覆盖对应配置项。未列出的配置段（如 `[registries]`、`[tokenCache]`、`[access].whiteList`）只能通过配置文件修改。
+环境变量在加载 `config.toml` 之后覆盖对应配置项。未列出的配置段（如 `[registries]`、`[tokenCache]`、`[access].whiteList`）只能通过配置文件修改。环境变量值非法时（如 `SERVER_PORT=abc`），服务会打印 `配置警告` 并忽略该变量，不影响启动。
 
 ## 全部变量
 
@@ -14,19 +14,21 @@ description: HubProxy 支持的环境变量说明。
 | `SERVER_PORT` | `[server].port` | 监听端口 |
 | `ENABLE_H2C` | `[server].enableH2C` | 启用 HTTP/2 Cleartext（`true`/`false`） |
 | `ENABLE_FRONTEND` | `[server].enableFrontend` | 启用 Web 界面（`true`/`false`） |
-| `MAX_FILE_SIZE` | `[server].fileSize` | 单文件大小上限（字节） |
+| `MAX_FILE_SIZE` | `[server].fileSize` | 单文件大小上限（字节数或 `"2GB"` 格式） |
 | `RATE_LIMIT` | `[rateLimit].requestLimit` | 每 IP 每周期请求数 |
 | `RATE_PERIOD_HOURS` | `[rateLimit].periodHours` | 限流周期（小时） |
-| `IP_WHITELIST` | `[security].whiteList` | 追加限流豁免 IP，逗号分隔 |
-| `IP_BLACKLIST` | `[security].blackList` | 追加封禁 IP，逗号分隔 |
-| `ACCESS_PROXY` | `[access].proxy` | 上游 SOCKS5 代理地址 |
+| `IP_WHITELIST` | `[security].whiteList` | 限流豁免 IP，逗号分隔；设置即**整体替换**文件名单 |
+| `IP_BLACKLIST` | `[security].blackList` | 封禁 IP，逗号分隔；设置即**整体替换**文件名单 |
+| `ACCESS_PROXY` | `[access].proxy` | 上游 SOCKS5 代理地址；设为空串表示清除 |
 | `MAX_IMAGES` | `[download].maxImages` | 批量离线镜像数量上限 |
+
+> **行为变更提示**：`IP_WHITELIST` / `IP_BLACKLIST` 历史版本为「追加到配置文件名单」，现统一为「设置即替换」。如需保留文件名单，请在环境变量中一并写全。
 
 ## 示例
 
 ```bash
 # systemd / 本地运行
-CONFIG_PATH=/etc/hubproxy/config.toml ./hubproxy
+CONFIG_PATH=/etc/li-gh-proxy/config.toml ./li-gh-proxy
 
 # Docker 快速调参
 docker run -d \
@@ -41,6 +43,6 @@ docker run -d \
 
 | 场景 | 建议 |
 |------|------|
-| systemd 服务 | `CONFIG_PATH=/etc/hubproxy/config.toml`（服务文件已内置） |
+| systemd 服务 | `CONFIG_PATH=/etc/li-gh-proxy/config.toml`（服务文件已内置） |
 | Docker | 挂载 `/app/config.toml`，临时参数用 `-e` |
 | 开发调试 | `CONFIG_PATH=./src/config.toml go run .` |

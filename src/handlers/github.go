@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"hubproxy/config"
-	"hubproxy/utils"
+	"li-gh-proxy/config"
+	"li-gh-proxy/utils"
 )
 
 var (
@@ -143,9 +143,9 @@ func proxyGitHubWithRedirect(c *gin.Context, u string, redirectCount int) {
 	// 检查文件大小限制
 	cfg := config.GetConfig()
 	if contentLength := resp.Header.Get("Content-Length"); contentLength != "" {
-		if size, err := strconv.ParseInt(contentLength, 10, 64); err == nil && size > cfg.Server.FileSize {
+		if size, err := strconv.ParseInt(contentLength, 10, 64); err == nil && size > int64(cfg.Server.FileSize) {
 			c.String(http.StatusRequestEntityTooLarge,
-				fmt.Sprintf("文件过大，限制大小: %d MB", cfg.Server.FileSize/(1024*1024)))
+				fmt.Sprintf("文件过大，限制大小: %d MB", int64(cfg.Server.FileSize)/(1024*1024)))
 			return
 		}
 	}

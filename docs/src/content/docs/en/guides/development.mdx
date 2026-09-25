@@ -6,7 +6,7 @@ description: Extend acceleration URLs, registry mappings, and build from source.
 ## Layout
 
 ```
-hubproxy/
+li-gh-proxy/
 ├── src/       # Go backend
 ├── web/       # Vue SPA
 ├── Dockerfile
@@ -52,16 +52,16 @@ Production embed:
 ```bash
 cd web && npm ci && npm run build
 # copy dist to src/dist
-cd ../src && go build -o hubproxy .
+cd ../src && go build -o li-gh-proxy .
 ```
 
 ## Docker build
 
 ```bash
-docker build -t hubproxy:local --build-arg VERSION=1.0.0 .
+docker build -t li-gh-proxy:local --build-arg VERSION=1.0.0 .
 
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t ghcr.io/your-org/hubproxy:latest \
+  -t ghcr.io/your-org/li-gh-proxy:latest \
   --build-arg VERSION=1.0.0 --push .
 ```
 

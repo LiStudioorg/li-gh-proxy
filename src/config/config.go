@@ -3,198 +3,69 @@ package config
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
-
-	"github.com/pelletier/go-toml/v2"
+	"sync/atomic"
 )
 
-// RegistryMapping Registry映射配置
-type RegistryMapping struct {
-	Upstream string `toml:"upstream"`
-	AuthHost string `toml:"authHost"`
-	AuthType string `toml:"authType"`
-	Enabled  bool   `toml:"enabled"`
+/*
+本包提供进程级配置：config.toml → 环境变量覆盖 → 校验 → 不可变快照。
+
+加载管线（LoadConfig 唯一入口）：
+  1. DefaultConfig()          内置默认值
+  2. decodeTOML               按 CONFIG_PATH（缺省 ./config.toml）解码，未知字段告警
+  3. overrideFromEnv          环境变量覆盖，非法值告警并忽略
+  4. validate                 启动期校验，致命错误聚合返回
+  5. freeze + atomic.Store    切片/map 克隆为只读快照后发布
+
+并发约定：GetConfig() 返回的快照在两次 LoadConfig() 之间不可变，
+调用方只读使用，禁止修改返回值。
+*/
+
+var configSnapshot atomic.Pointer[AppConfig]
+
+func init() {
+	// 未调用 LoadConfig 前提供合法默认快照，保证 GetConfig 永不返回 nil
+	configSnapshot.Store(DefaultConfig())
 }
 
-// AppConfig 应用配置结构体
-type AppConfig struct {
-	Server struct {
-		Host           string `toml:"host"`
-		Port           int    `toml:"port"`
-		FileSize       int64  `toml:"fileSize"`
-		EnableH2C      bool   `toml:"enableH2C"`
-		EnableFrontend bool   `toml:"enableFrontend"`
-	} `toml:"server"`
-
-	RateLimit struct {
-		RequestLimit int     `toml:"requestLimit"`
-		PeriodHours  float64 `toml:"periodHours"`
-	} `toml:"rateLimit"`
-
-	Security struct {
-		WhiteList []string `toml:"whiteList"`
-		BlackList []string `toml:"blackList"`
-	} `toml:"security"`
-
-	Access struct {
-		WhiteList []string `toml:"whiteList"`
-		BlackList []string `toml:"blackList"`
-		Proxy     string   `toml:"proxy"`
-	} `toml:"access"`
-
-	Download struct {
-		MaxImages int `toml:"maxImages"`
-	} `toml:"download"`
-
-	Registries map[string]RegistryMapping `toml:"registries"`
-
-	TokenCache struct {
-		Enabled    bool   `toml:"enabled"`
-		DefaultTTL string `toml:"defaultTTL"`
-	} `toml:"tokenCache"`
-}
-
-var (
-	appConfig     *AppConfig
-	appConfigLock sync.RWMutex
-
-	cachedConfig     *AppConfig
-	configCacheTime  time.Time
-	configCacheTTL   = 5 * time.Second
-	configCacheMutex sync.RWMutex
-)
-
-// DefaultConfig 返回默认配置
-func DefaultConfig() *AppConfig {
-	return &AppConfig{
-		Server: struct {
-			Host           string `toml:"host"`
-			Port           int    `toml:"port"`
-			FileSize       int64  `toml:"fileSize"`
-			EnableH2C      bool   `toml:"enableH2C"`
-			EnableFrontend bool   `toml:"enableFrontend"`
-		}{
-			Host:           "0.0.0.0",
-			Port:           5000,
-			FileSize:       2 * 1024 * 1024 * 1024,
-			EnableH2C:      false,
-			EnableFrontend: true,
-		},
-		RateLimit: struct {
-			RequestLimit int     `toml:"requestLimit"`
-			PeriodHours  float64 `toml:"periodHours"`
-		}{
-			RequestLimit: 500,
-			PeriodHours:  3.0,
-		},
-		Security: struct {
-			WhiteList []string `toml:"whiteList"`
-			BlackList []string `toml:"blackList"`
-		}{
-			WhiteList: []string{},
-			BlackList: []string{},
-		},
-		Access: struct {
-			WhiteList []string `toml:"whiteList"`
-			BlackList []string `toml:"blackList"`
-			Proxy     string   `toml:"proxy"`
-		}{
-			WhiteList: []string{},
-			BlackList: []string{},
-			Proxy:     "",
-		},
-		Download: struct {
-			MaxImages int `toml:"maxImages"`
-		}{
-			MaxImages: 10,
-		},
-		Registries: map[string]RegistryMapping{
-			"ghcr.io": {
-				Upstream: "ghcr.io",
-				AuthHost: "ghcr.io/token",
-				AuthType: "github",
-				Enabled:  true,
-			},
-			"gcr.io": {
-				Upstream: "gcr.io",
-				AuthHost: "gcr.io/v2/token",
-				AuthType: "google",
-				Enabled:  true,
-			},
-			"quay.io": {
-				Upstream: "quay.io",
-				AuthHost: "quay.io/v2/auth",
-				AuthType: "quay",
-				Enabled:  true,
-			},
-			"registry.k8s.io": {
-				Upstream: "registry.k8s.io",
-				AuthHost: "registry.k8s.io",
-				AuthType: "anonymous",
-				Enabled:  true,
-			},
-		},
-		TokenCache: struct {
-			Enabled    bool   `toml:"enabled"`
-			DefaultTTL string `toml:"defaultTTL"`
-		}{
-			Enabled:    true,
-			DefaultTTL: "20m",
-		},
-	}
-}
-
-// GetConfig 安全地获取配置副本
+// GetConfig 返回当前配置快照（只读，禁止修改返回值及其内部切片/map）。
 func GetConfig() *AppConfig {
-	configCacheMutex.RLock()
-	if cachedConfig != nil && time.Since(configCacheTime) < configCacheTTL {
-		config := cachedConfig
-		configCacheMutex.RUnlock()
-		return config
-	}
-	configCacheMutex.RUnlock()
-
-	configCacheMutex.Lock()
-	defer configCacheMutex.Unlock()
-
-	if cachedConfig != nil && time.Since(configCacheTime) < configCacheTTL {
-		return cachedConfig
-	}
-
-	appConfigLock.RLock()
-	if appConfig == nil {
-		appConfigLock.RUnlock()
-		defaultCfg := DefaultConfig()
-		cachedConfig = defaultCfg
-		configCacheTime = time.Now()
-		return defaultCfg
-	}
-
-	configCopy := *appConfig
-	configCopy.Security.WhiteList = append([]string(nil), appConfig.Security.WhiteList...)
-	configCopy.Security.BlackList = append([]string(nil), appConfig.Security.BlackList...)
-	configCopy.Access.WhiteList = append([]string(nil), appConfig.Access.WhiteList...)
-	configCopy.Access.BlackList = append([]string(nil), appConfig.Access.BlackList...)
-	appConfigLock.RUnlock()
-
-	cachedConfig = &configCopy
-	configCacheTime = time.Now()
-
-	return cachedConfig
+	return configSnapshot.Load()
 }
 
-// setConfig 安全地设置配置
-func setConfig(cfg *AppConfig) {
-	appConfigLock.Lock()
-	defer appConfigLock.Unlock()
-	appConfig = cfg
+// LoadConfig 加载配置并发布快照。
+// 配置文件缺失时使用默认配置；解析或校验失败返回 error，由调用方决定是否终止启动。
+func LoadConfig() error {
+	cfg := DefaultConfig()
+	path := configFilePath()
 
-	configCacheMutex.Lock()
-	cachedConfig = nil
-	configCacheMutex.Unlock()
+	if data, err := os.ReadFile(path); err == nil {
+		warnings, err := decodeTOML(cfg, data)
+		printWarnings(warnings)
+		if err != nil {
+			return fmt.Errorf("解析配置文件 %s 失败: %w", path, err)
+		}
+	} else {
+		fmt.Printf("未找到配置文件 %s，使用默认配置\n", path)
+	}
+
+	printWarnings(overrideFromEnv(cfg))
+
+	warnings, err := validate(cfg)
+	printWarnings(warnings)
+	if err != nil {
+		return err
+	}
+
+	freeze(cfg)
+	configSnapshot.Store(cfg)
+	return nil
+}
+
+func printWarnings(warnings []string) {
+	for _, w := range warnings {
+		fmt.Printf("配置警告: %s\n", w)
+	}
 }
 
 func configFilePath() string {
@@ -204,75 +75,15 @@ func configFilePath() string {
 	return "config.toml"
 }
 
-func LoadConfig() error {
-	cfg := DefaultConfig()
-	path := configFilePath()
-
-	if data, err := os.ReadFile(path); err == nil {
-		if err := toml.Unmarshal(data, cfg); err != nil {
-			return fmt.Errorf("解析配置文件 %s 失败: %v", path, err)
-		}
-	} else {
-		fmt.Printf("未找到配置文件 %s，使用默认配置\n", path)
+// freeze 克隆全部可变字段，使快照与解码过程中的临时状态完全隔离
+func freeze(cfg *AppConfig) {
+	cfg.Security.WhiteList = append([]string(nil), cfg.Security.WhiteList...)
+	cfg.Security.BlackList = append([]string(nil), cfg.Security.BlackList...)
+	cfg.Access.WhiteList = append([]string(nil), cfg.Access.WhiteList...)
+	cfg.Access.BlackList = append([]string(nil), cfg.Access.BlackList...)
+	registries := make(map[string]RegistryMapping, len(cfg.Registries))
+	for domain, mapping := range cfg.Registries {
+		registries[domain] = mapping
 	}
-
-	overrideFromEnv(cfg)
-	setConfig(cfg)
-
-	return nil
-}
-
-// overrideFromEnv 从环境变量覆盖配置
-func overrideFromEnv(cfg *AppConfig) {
-	if val := os.Getenv("SERVER_HOST"); val != "" {
-		cfg.Server.Host = val
-	}
-	if val := os.Getenv("SERVER_PORT"); val != "" {
-		if port, err := strconv.Atoi(val); err == nil && port > 0 {
-			cfg.Server.Port = port
-		}
-	}
-	if val := os.Getenv("ENABLE_H2C"); val != "" {
-		if enable, err := strconv.ParseBool(val); err == nil {
-			cfg.Server.EnableH2C = enable
-		}
-	}
-	if val := os.Getenv("ENABLE_FRONTEND"); val != "" {
-		if enable, err := strconv.ParseBool(val); err == nil {
-			cfg.Server.EnableFrontend = enable
-		}
-	}
-	if val := os.Getenv("MAX_FILE_SIZE"); val != "" {
-		if size, err := strconv.ParseInt(val, 10, 64); err == nil && size > 0 {
-			cfg.Server.FileSize = size
-		}
-	}
-
-	if val := os.Getenv("RATE_LIMIT"); val != "" {
-		if limit, err := strconv.Atoi(val); err == nil && limit > 0 {
-			cfg.RateLimit.RequestLimit = limit
-		}
-	}
-	if val := os.Getenv("RATE_PERIOD_HOURS"); val != "" {
-		if period, err := strconv.ParseFloat(val, 64); err == nil && period > 0 {
-			cfg.RateLimit.PeriodHours = period
-		}
-	}
-
-	if val := os.Getenv("IP_WHITELIST"); val != "" {
-		cfg.Security.WhiteList = append(cfg.Security.WhiteList, strings.Split(val, ",")...)
-	}
-	if val := os.Getenv("IP_BLACKLIST"); val != "" {
-		cfg.Security.BlackList = append(cfg.Security.BlackList, strings.Split(val, ",")...)
-	}
-
-	if val, ok := os.LookupEnv("ACCESS_PROXY"); ok {
-		cfg.Access.Proxy = strings.TrimSpace(val)
-	}
-
-	if val := os.Getenv("MAX_IMAGES"); val != "" {
-		if maxImages, err := strconv.Atoi(val); err == nil && maxImages > 0 {
-			cfg.Download.MaxImages = maxImages
-		}
-	}
+	cfg.Registries = registries
 }

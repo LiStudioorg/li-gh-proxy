@@ -1,4 +1,4 @@
-module hubproxy
+module li-gh-proxy
 
 go 1.26
 

@@ -19,7 +19,7 @@ export default defineNuxtConfig({
     head: {
       htmlAttrs: { lang: 'zh-CN' },
       meta: [
-        { name: 'description', content: 'HubProxy - GitHub 加速、Docker 镜像加速与离线下载' },
+        { name: 'description', content: 'li-gh-proxy - GitHub 加速、Docker 镜像加速与离线下载' },
       ],
       link: [{ rel: 'icon', href: '/favicon.ico' }],
       script: [

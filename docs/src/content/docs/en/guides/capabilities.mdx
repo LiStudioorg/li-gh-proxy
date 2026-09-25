@@ -1,13 +1,13 @@
 ---
 title: Transfer Capabilities
-description: Transfer behavior for Docker pulls and GitHub downloads in HubProxy.
+description: Transfer behavior for Docker pulls and GitHub downloads in li-gh-proxy.
 ---
 
 Based on current code in `src/handlers/docker.go` and `src/handlers/github.go`.
 
 ## Docker Image Pulls
 
-HubProxy fetches manifests and blobs via go-containerregistry, then returns them over HTTP.
+li-gh-proxy fetches manifests and blobs via go-containerregistry, then returns them over HTTP.
 
 | Capability | Supported | Notes |
 |------------|-----------|-------|
@@ -15,7 +15,7 @@ HubProxy fetches manifests and blobs via go-containerregistry, then returns them
 | Token cache | ✅ | Upstream `expires_in` driven |
 | Multi-registry paths | ✅ | e.g. `example.com/ghcr.io/owner/image:tag` |
 | containerd `ns` param | ✅ | Matches `[registries]` entries |
-| Auth realm rewrite | ✅ | Upstream token → HubProxy `/token` |
+| Auth realm rewrite | ✅ | Upstream token → li-gh-proxy `/token` |
 | HTTP Range / in-layer resume | ❌ | Blobs always fetched fully; client `Range` ignored |
 | Layer-level retry | ✅ | Docker/containerd retries failed layers |
 

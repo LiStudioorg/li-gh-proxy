@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/',
   integrations: [
     starlight({
-      title: 'HubProxy',
+      title: 'li-gh-proxy',
       description: 'Docker 与 GitHub 加速代理服务文档',
       defaultLocale: 'root',
       locales: {
@@ -20,7 +20,7 @@ export default defineConfig({
         },
       },
       logo: {
-        alt: 'HubProxy',
+        alt: 'li-gh-proxy',
         src: './src/assets/logo.svg',
       },
       social: [

@@ -1,13 +1,13 @@
 ﻿---
 title: GitHub Acceleration
-description: Accelerate GitHub Release, Raw, Clone, API, and Hugging Face downloads with HubProxy.
+description: Accelerate GitHub Release, Raw, Clone, API, and Hugging Face downloads with li-gh-proxy.
 ---
 
-Requests that do not match `/v2`, `/token`, `/api`, or other registered routes are handled by the GitHub proxy. Prefix the **full original URL** with your HubProxy host; if the URL matches a supported pattern, the handler reconstructs it and proxies to GitHub, Hugging Face, or other upstreams — otherwise it returns "invalid input".
+Requests that do not match `/v2`, `/token`, `/api`, or other registered routes are handled by the GitHub proxy. Prefix the **full original URL** with your li-gh-proxy host; if the URL matches a supported pattern, the handler reconstructs it and proxies to GitHub, Hugging Face, or other upstreams — otherwise it returns "invalid input".
 
 ## How to Accelerate
 
-Prefix your original URL with the HubProxy host. Two formats are supported.
+Prefix your original URL with the li-gh-proxy host. Two formats are supported.
 
 ### Full URL (Recommended)
 
@@ -24,7 +24,7 @@ curl "https://example.com/https://api.github.com/repos/owner/repo/releases/lates
 
 ### Global Git acceleration
 
-Use `url.<base>.insteadOf` so every `https://github.com/` clone/fetch goes through HubProxy automatically:
+Use `url.<base>.insteadOf` so every `https://github.com/` clone/fetch goes through li-gh-proxy automatically:
 
 ```bash
 git config --global url."https://example.com/https://github.com/".insteadOf "https://github.com/"
@@ -45,7 +45,7 @@ git config --global --unset url.https://example.com/https://github.com/.insteadO
 
 ### Omit `https://`
 
-HubProxy auto-prepends the scheme:
+li-gh-proxy auto-prepends the scheme:
 
 ```bash
 curl -L -O "https://example.com/github.com/owner/repo/releases/download/v1.0.0/app.tar.gz"
@@ -70,7 +70,7 @@ curl -L -O "https://example.com/github.com/owner/repo/releases/download/v1.0.0/a
 
 ## Script Nesting
 
-HubProxy can rewrite GitHub URLs inside `.sh` / `.ps1` install scripts (max 10MB). Behind a reverse proxy, set `X-Forwarded-Host` correctly — see [Reverse Proxy](/en/deployment/reverse-proxy/).
+li-gh-proxy can rewrite GitHub URLs inside `.sh` / `.ps1` install scripts (max 10MB). Behind a reverse proxy, set `X-Forwarded-Host` correctly — see [Reverse Proxy](/en/deployment/reverse-proxy/).
 
 ## Limits and Blocks
 

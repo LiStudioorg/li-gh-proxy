@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"hubproxy/config"
+	"li-gh-proxy/config"
 )
 
 func TestParseDockerImage(t *testing.T) {

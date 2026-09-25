@@ -1,4 +1,4 @@
-name: hubproxy
+name: li-gh-proxy
 arch: ${NFPM_ARCH}
 platform: linux
 version: ${NFPM_VERSION}
@@ -14,24 +14,24 @@ depends:
   - logrotate
 
 contents:
-  - src: ./build/package-root/hubproxy
-    dst: /usr/bin/hubproxy
+  - src: ./build/package-root/li-gh-proxy
+    dst: /usr/bin/li-gh-proxy
     file_info:
       mode: 0755
 
   - src: ./src/config.toml
-    dst: /etc/hubproxy/config.toml
+    dst: /etc/li-gh-proxy/config.toml
     type: config|noreplace
     file_info:
       mode: 0644
 
-  - src: ./packaging/hubproxy.openrc
-    dst: /etc/init.d/hubproxy
+  - src: ./packaging/li-gh-proxy.openrc
+    dst: /etc/init.d/li-gh-proxy
     file_info:
       mode: 0755
 
-  - src: ./packaging/hubproxy.logrotate
-    dst: /etc/logrotate.d/hubproxy
+  - src: ./packaging/li-gh-proxy.logrotate
+    dst: /etc/logrotate.d/li-gh-proxy
     file_info:
       mode: 0644
 

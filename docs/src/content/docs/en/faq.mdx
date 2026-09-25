@@ -1,12 +1,12 @@
 ﻿---
 title: FAQ
-description: Frequently asked questions about deploying and using HubProxy.
+description: Frequently asked questions about deploying and using li-gh-proxy.
 ---
 
 <details>
-<summary>How is HubProxy different from free CDN proxies?</summary>
+<summary>How is li-gh-proxy different from free CDN proxies?</summary>
 
-HubProxy is fully self-hosted — you control data and bandwidth without relying on unstable third-party CDNs. Customize rate limits, registry allowlists, and upstream SOCKS5 proxies.
+li-gh-proxy is fully self-hosted — you control data and bandwidth without relying on unstable third-party CDNs. Customize rate limits, registry allowlists, and upstream SOCKS5 proxies.
 
 </details>
 
@@ -27,7 +27,7 @@ Strongly recommended. It provides TLS, correct client IP passing, and avoids exp
 <details>
 <summary>How do I format GitHub acceleration URLs?</summary>
 
-Prefix the **full original URL** with your HubProxy host, e.g. `https://example.com/https://github.com/owner/repo/releases/download/...`. Path-prefix rewrites like `/github/owner/...` are not supported. See [GitHub Acceleration](/en/guides/github-proxy/).
+Prefix the **full original URL** with your li-gh-proxy host, e.g. `https://example.com/https://github.com/owner/repo/releases/download/...`. Path-prefix rewrites like `/github/owner/...` are not supported. See [GitHub Acceleration](/en/guides/github-proxy/).
 
 </details>
 
@@ -48,7 +48,7 @@ Two steps: `GET /api/image/download?image=...&mode=prepare` for a token, then do
 <details>
 <summary>All users share one IP behind Cloudflare?</summary>
 
-If HubProxy connects directly to Cloudflare edges, rate limits apply per Cloudflare IP, not per user. Add a private reverse proxy that writes `CF-Connecting-IP` to forwarding headers.
+If li-gh-proxy connects directly to Cloudflare edges, rate limits apply per Cloudflare IP, not per user. Add a private reverse proxy that writes `CF-Connecting-IP` to forwarding headers.
 
 </details>
 
@@ -67,7 +67,7 @@ Visit `https://example.com/ready` — a healthy response includes `ready`, `serv
 </details>
 
 <details>
-<summary>Does HubProxy support resume or multi-part downloads?</summary>
+<summary>Does li-gh-proxy support resume or multi-part downloads?</summary>
 
 **GitHub / Hugging Face file downloads: yes.** The proxy forwards `Range` headers and passes through upstream 206 responses — `wget -c` and multi-threaded Range downloads work (except `.sh` / `.ps1` script rewriting).
 
@@ -87,6 +87,6 @@ Add a regex to `githubExps` in `src/handlers/github.go`. See [Development & Buil
 <details>
 <summary>Why can't I pull private images with authType github?</summary>
 
-`authType` labels auth endpoints only — credential injection is not yet implemented. All registry pulls use anonymous auth and client `Authorization` headers are not forwarded. **Private authenticated images cannot be pulled through HubProxy.**
+`authType` labels auth endpoints only — credential injection is not yet implemented. All registry pulls use anonymous auth and client `Authorization` headers are not forwarded. **Private authenticated images cannot be pulled through li-gh-proxy.**
 
 </details>

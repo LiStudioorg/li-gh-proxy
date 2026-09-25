@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" fill="none" role="img" aria-label="HubProxy">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" fill="none" role="img" aria-label="li-gh-proxy">
   <defs>
     <linearGradient id="hero-bg" x1="0" y1="0" x2="480" y2="320" gradientUnits="userSpaceOnUse">
       <stop stop-color="#eff6ff"/>
@@ -52,6 +52,6 @@
     <path d="M240 96v6M240 162v6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.45"/>
   </g>
 
-  <text x="240" y="228" text-anchor="middle" fill="#0f172a" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="34" font-weight="700" letter-spacing="-0.02em">HubProxy</text>
+  <text x="240" y="228" text-anchor="middle" fill="#0f172a" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="34" font-weight="700" letter-spacing="-0.02em">li-gh-proxy</text>
   <text x="240" y="258" text-anchor="middle" fill="#64748b" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="15" font-weight="500">Docker · GitHub · Registry Proxy</text>
 </svg>

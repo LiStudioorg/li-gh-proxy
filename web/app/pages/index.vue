@@ -7,7 +7,7 @@ import Chip from 'fuxsto-design/chip'
 import Alert from 'fuxsto-design/alert'
 import { copyText } from '~/utils/format'
 
-useHead({ title: 'GitHub 加速 · HubProxy' })
+useHead({ title: 'GitHub 加速 · li-gh-proxy' })
 
 const host = computed(() => window.location.host)
 
@@ -90,7 +90,7 @@ function onOpen() {
   <div class="mx-auto max-w-3xl">
     <PageHero
       eyebrow="面向开发者和运维人员的加速服务"
-      title="HubProxy"
+      title="li-gh-proxy"
       subtitle="GitHub 文件加速 · Docker 镜像加速 · Hugging Face 资源"
       gradient
     >

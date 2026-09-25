@@ -3,13 +3,13 @@ title: Offline Images
 description: Package Docker images as tar files online, with single and batch download.
 ---
 
-HubProxy's web UI (`enableFrontend = true`) and API package images as tar archives without a local Docker daemon.
+li-gh-proxy's web UI (`enableFrontend = true`) and API package images as tar archives without a local Docker daemon.
 
 Downloads use a **two-step flow**: `prepare` for a one-time token, then download with that token. Tokens expire in **2 minutes** and are bound to client IP and User-Agent.
 
 ## Web UI
 
-Visit the HubProxy homepage and use the offline image feature. Leave architecture empty to prefer `linux/amd64`; if a specified architecture is unmatched, the first available platform in the multi-arch index is used.
+Visit the li-gh-proxy homepage and use the offline image feature. Leave architecture empty to prefer `linux/amd64`; if a specified architecture is unmatched, the first available platform in the multi-arch index is used.
 
 ## Image Reference Format
 
@@ -33,7 +33,7 @@ The web UI and API expose a compressed-layers toggle (`compressed` / `useCompres
 | On (default) | **Compressed blob** from the registry (usually gzip) | Smaller, faster download | Modern Docker Engine, `docker load` |
 | Off | **Uncompressed** filesystem layer tar (classic `docker save` format) | Larger, slower to build | Older Docker Engine versions or environments that only accept uncompressed layers |
 
-HubProxy outputs a `docker load`-compatible tar. With compression enabled, each layer keeps the upstream compressed blob instead of decompressing and re-packing on the server, which saves bandwidth and CPU. The off switch remains for **legacy Docker** (image format v1 era and early `docker load` implementations): those expect uncompressed filesystem tars in `layer.tar`, matching `docker save` output — disabling compression produces the same layer format.
+li-gh-proxy outputs a `docker load`-compatible tar. With compression enabled, each layer keeps the upstream compressed blob instead of decompressing and re-packing on the server, which saves bandwidth and CPU. The off switch remains for **legacy Docker** (image format v1 era and early `docker load` implementations): those expect uncompressed filesystem tars in `layer.tar`, matching `docker save` output — disabling compression produces the same layer format.
 
 ## Single Image API
 

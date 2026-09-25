@@ -1,13 +1,13 @@
 ---
 title: 传输特性
-description: HubProxy 在 Docker 拉取与 GitHub 下载场景下的能力边界说明。
+description: li-gh-proxy 在 Docker 拉取与 GitHub 下载场景下的能力边界说明。
 ---
 
 本文基于当前代码实现（`src/handlers/docker.go`、`src/handlers/github.go`），说明各场景的传输行为。
 
 ## Docker 镜像拉取
 
-HubProxy 通过 go-containerregistry 向上游拉取 manifest 与 blob，再以 HTTP 响应形式返回客户端。
+li-gh-proxy 通过 go-containerregistry 向上游拉取 manifest 与 blob，再以 HTTP 响应形式返回客户端。
 
 | 能力 | 支持 | 说明 |
 |------|------|------|
@@ -15,17 +15,17 @@ HubProxy 通过 go-containerregistry 向上游拉取 manifest 与 blob，再以 
 | Token 缓存 | ✅ | 上游 `expires_in` 驱动 |
 | 多 Registry 路径 | ✅ | 如 `example.com/ghcr.io/owner/image:tag` |
 | containerd `ns` 参数 | ✅ | 识别 `[registries]` 中的 registry |
-| 认证 realm 改写 | ✅ | 上游 token 地址改写到 HubProxy `/token` |
+| 认证 realm 改写 | ✅ | 上游 token 地址改写到 li-gh-proxy `/token` |
 | HTTP Range / layer 内续传 | ❌ | blob 始终整层读取后转发，不读取客户端 `Range` |
 | layer 级重试 | ✅ | Docker/containerd 拉取失败会重试整个 layer |
 
 :::note
-每个 layer 对应至少一次 blob 请求，均计入 IP 限流。HubProxy 对 blob **不做** Range 分片，但客户端可并行拉取**不同 layer**（多连接）。
+每个 layer 对应至少一次 blob 请求，均计入 IP 限流。li-gh-proxy 对 blob **不做** Range 分片，但客户端可并行拉取**不同 layer**（多连接）。
 :::
 
 ### 与标准 Registry 的差异
 
-- blob 非透明透传，由 HubProxy 从上游完整拉取后再 `io.Copy` 转发
+- blob 非透明透传，由 li-gh-proxy 从上游完整拉取后再 `io.Copy` 转发
 - 不支持 PATCH/PUT 上传（仅拉取）
 - HEAD / GET manifest 支持
 

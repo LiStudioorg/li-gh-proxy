@@ -1,11 +1,11 @@
 ---
 title: NAS 配置
-description: 在群晖 DSM 与飞牛 fnOS 上配置 HubProxy 镜像加速。
+description: 在群晖 DSM 与飞牛 fnOS 上配置 li-gh-proxy 镜像加速。
 ---
 
 NAS 上的 Docker 通过图形界面管理，**不要**随意用脚本覆盖整个 `daemon.json`，以免丢失 `data-root` 导致容器丢失。
 
-以下假设 HubProxy 已通过反代暴露在 `https://example.com`。
+以下假设 li-gh-proxy 已通过反代暴露在 `https://example.com`。
 
 ## 群晖 DSM（Container Manager）
 
@@ -62,7 +62,7 @@ sudo systemctl restart pkg-ContainerManager-dockerd
 
 ### 注意
 
-- 应用中心部分应用走阿里云等固定 Registry，与 HubProxy 无关
+- 应用中心部分应用走阿里云等固定 Registry，与 li-gh-proxy 无关
 - 修改后必须重启 Docker 才生效
 
 ## 相关文档

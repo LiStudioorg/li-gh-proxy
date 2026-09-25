@@ -1,9 +1,9 @@
 ﻿---
 title: 安全概述
-description: HubProxy 安全模型、风险点与最佳实践。
+description: li-gh-proxy 安全模型、风险点与最佳实践。
 ---
 
-HubProxy 作为开放代理服务，部署不当可能带来滥用风险。遵循以下实践可显著降低暴露面。
+li-gh-proxy 作为开放代理服务，部署不当可能带来滥用风险。遵循以下实践可显著降低暴露面。
 
 ## 核心安全机制
 
@@ -18,7 +18,7 @@ HubProxy 作为开放代理服务，部署不当可能带来滥用风险。遵�
 
 ## 未内置的能力
 
-HubProxy **没有**管理后台登录、Basic Auth、API Key 或 Prometheus 指标端点。Web 界面为公开 SPA，安全依赖网络层与配置策略。
+li-gh-proxy **没有**管理后台登录、Basic Auth、API Key 或 Prometheus 指标端点。Web 界面为公开 SPA，安全依赖网络层与配置策略。
 
 ## 主要风险
 
@@ -28,7 +28,7 @@ HubProxy **没有**管理后台登录、Basic Auth、API Key 或 Prometheus 指�
 
 ## 推荐实践
 
-- 使用 [推荐部署架构](/deployment/architecture/)：CDN（可选）→ 反代 → HubProxy
+- 使用 [推荐部署架构](/deployment/architecture/)：CDN（可选）→ 反代 → li-gh-proxy
 - 公网服务配置 `[access].whiteList`
 - 反代覆盖写 `X-Forwarded-For`、`X-Real-IP`、`X-Forwarded-Host`
 - 公网服务建议通过反代暴露，不直接开放 `5000` 端口

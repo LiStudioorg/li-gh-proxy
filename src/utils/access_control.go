@@ -3,7 +3,7 @@ package utils
 import (
 	"strings"
 
-	"hubproxy/config"
+	"li-gh-proxy/config"
 )
 
 // ResourceType 资源类型

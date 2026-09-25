@@ -34,7 +34,7 @@ onMounted(() => {
           <span class="brand-mark flex size-9 items-center justify-center rounded-lg">
             <Zap class="size-[18px]" />
           </span>
-          <span>HubProxy</span>
+          <span>li-gh-proxy</span>
         </NuxtLink>
 
         <nav class="hidden items-center gap-1.5 md:flex">

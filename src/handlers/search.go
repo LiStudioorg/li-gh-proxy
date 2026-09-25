@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"hubproxy/utils"
+	"li-gh-proxy/utils"
 )
 
 // SearchResult Docker Hub搜索结果

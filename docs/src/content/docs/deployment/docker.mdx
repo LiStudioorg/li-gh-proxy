@@ -1,13 +1,13 @@
 ﻿---
 title: Docker 部署
-description: 使用 Docker 与 Docker Compose 部署 HubProxy。
+description: 使用 Docker 与 Docker Compose 部署 li-gh-proxy。
 ---
 
 ## docker run
 
 ```bash
 docker run -d \
-  --name hubproxy \
+  --name li-gh-proxy \
   -p 5000:5000 \
   --restart always \
   -v ./src/config.toml:/app/config.toml:ro \
@@ -25,7 +25,7 @@ docker compose up -d
 默认挂载 `./src/config.toml` 到容器内 `/app/config.toml`。Compose 文件内已配置日志轮转（`200m × 3`），无需在 `docker run` 中重复设置。
 
 :::caution
-生产环境建议不要将 `5000` 直接映射到公网。更安全的做法是让 Caddy/Nginx 容器访问 HubProxy 内网地址。
+生产环境建议不要将 `5000` 直接映射到公网。更安全的做法是让 Caddy/Nginx 容器访问 li-gh-proxy 内网地址。
 :::
 
 ## 与反代配合
@@ -33,8 +33,8 @@ docker compose up -d
 典型 Compose 结构：
 
 ```
-caddy:    对外 443，反代 hubproxy:5000
-hubproxy: 仅内网暴露 5000，不映射到宿主机公网
+caddy:    对外 443，反代 li-gh-proxy:5000
+li-gh-proxy: 仅内网暴露 5000，不映射到宿主机公网
 ```
 
 ## 健康检查

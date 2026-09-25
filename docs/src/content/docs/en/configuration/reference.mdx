@@ -1,6 +1,6 @@
 ﻿---
 title: config.toml Reference
-description: Complete reference for the HubProxy configuration file.
+description: Complete reference for the li-gh-proxy configuration file.
 ---
 
 Default config path is `./config.toml` in the working directory. Override with `CONFIG_PATH`. See [Environment Variables](/en/configuration/environment/) for the full env var list.
@@ -11,7 +11,7 @@ Default config path is `./config.toml` in the working directory. Override with `
 |-----|------|---------|-------------|
 | `host` | string | `0.0.0.0` | Listen address |
 | `port` | int | `5000` | Listen port |
-| `fileSize` | int | `2147483648` | Max single-file size (bytes), GitHub / Hugging Face URL proxy only |
+| `fileSize` | int / string | `2147483648` | Max single-file size, GitHub / Hugging Face URL proxy only; plain byte count or unit strings like `"2GB"`, `"1.5GiB"` |
 | `enableH2C` | bool | `false` | Enable HTTP/2 Cleartext |
 | `enableFrontend` | bool | `true` | Enable web UI (Vue SPA) |
 
@@ -69,7 +69,7 @@ Per-registry keys:
 Defaults include `ghcr.io`, `gcr.io`, `quay.io`, `registry.k8s.io`. Docker Hub always proxies to `registry-1.docker.io` and is not configured here.
 
 :::note
-All registries currently use anonymous pulls (`authn.Anonymous`). `authType` labels the auth endpoint only — **GitHub tokens and Google service accounts are not yet implemented**, and client `Authorization` headers are not forwarded. **Private authenticated images cannot be pulled through HubProxy.**
+All registries currently use anonymous pulls (`authn.Anonymous`). `authType` labels the auth endpoint only — **GitHub tokens and Google service accounts are not yet implemented**, and client `Authorization` headers are not forwarded. **Private authenticated images cannot be pulled through li-gh-proxy.**
 :::
 
 ## [tokenCache]
@@ -77,7 +77,7 @@ All registries currently use anonymous pulls (`authn.Anonymous`). `authType` lab
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | `enabled` | bool | `true` | Enable token/manifest cache |
-| `defaultTTL` | string | `"20m"` | Default manifest cache TTL for ordinary tags |
+| `defaultTTL` | string (duration) | `"20m"` | Default manifest cache TTL for ordinary tags, e.g. `"20m"`, `"1h30m"`; validated at startup |
 
 Manifest cache TTL rules:
 

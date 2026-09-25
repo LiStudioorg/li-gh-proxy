@@ -1,6 +1,6 @@
 ﻿---
 title: System Installation
-description: Deploy HubProxy with deb, rpm, or apk packages and manage the service.
+description: Deploy li-gh-proxy with deb, rpm, or apk packages and manage the service.
 ---
 
 ## Install Script
@@ -15,42 +15,42 @@ Supports `amd64` / `arm64` with `apt`, `dnf`, `apk`, and other package managers.
 
 | Path | Description |
 |------|-------------|
-| `/etc/hubproxy/config.toml` | Configuration file |
-| `/usr/bin/hubproxy` | Binary |
-| `/lib/systemd/system/hubproxy.service` | systemd unit (Debian/Ubuntu/RHEL) |
-| `/etc/init.d/hubproxy` | OpenRC service (Alpine) |
-| `/var/log/hubproxy.log` | Alpine log file |
+| `/etc/li-gh-proxy/config.toml` | Configuration file |
+| `/usr/bin/li-gh-proxy` | Binary |
+| `/lib/systemd/system/li-gh-proxy.service` | systemd unit (Debian/Ubuntu/RHEL) |
+| `/etc/init.d/li-gh-proxy` | OpenRC service (Alpine) |
+| `/var/log/li-gh-proxy.log` | Alpine log file |
 
 ## systemd
 
 ```bash
-sudo systemctl status hubproxy    # Check service status
-sudo systemctl restart hubproxy   # Restart after config changes
-sudo journalctl -u hubproxy -f    # Follow logs
-sudo nano /etc/hubproxy/config.toml  # Edit config
+sudo systemctl status li-gh-proxy    # Check service status
+sudo systemctl restart li-gh-proxy   # Restart after config changes
+sudo journalctl -u li-gh-proxy -f    # Follow logs
+sudo nano /etc/li-gh-proxy/config.toml  # Edit config
 ```
 
 Uninstall:
 
 ```bash
-sudo apt purge hubproxy   # Debian/Ubuntu — remove package and config
+sudo apt purge li-gh-proxy   # Debian/Ubuntu — remove package and config
 ```
 
 ## OpenRC (Alpine)
 
 ```bash
-sudo rc-service hubproxy status   # Check status
-sudo rc-service hubproxy restart  # Restart service
-sudo tail -f /var/log/hubproxy.log  # Follow logs
-sudo vi /etc/hubproxy/config.toml   # Edit config
+sudo rc-service li-gh-proxy status   # Check status
+sudo rc-service li-gh-proxy restart  # Restart service
+sudo tail -f /var/log/li-gh-proxy.log  # Follow logs
+sudo vi /etc/li-gh-proxy/config.toml   # Edit config
 ```
 
 Uninstall:
 
 ```bash
-sudo apk del hubproxy   # Remove package
+sudo apk del li-gh-proxy   # Remove package
 ```
 
 ## Production recommendation
 
-For public or team use, point a **custom domain** at HubProxy through Caddy / Nginx with **HTTPS enabled**, instead of exposing `http://IP:5000` long term. This provides TLS, correct client IP forwarding, and safer access. See [Reverse Proxy](/en/deployment/reverse-proxy/) and [Recommended Architecture](/en/deployment/architecture/).
+For public or team use, point a **custom domain** at li-gh-proxy through Caddy / Nginx with **HTTPS enabled**, instead of exposing `http://IP:5000` long term. This provides TLS, correct client IP forwarding, and safer access. See [Reverse Proxy](/en/deployment/reverse-proxy/) and [Recommended Architecture](/en/deployment/architecture/).

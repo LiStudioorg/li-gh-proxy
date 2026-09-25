@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"hubproxy/config"
+	"li-gh-proxy/config"
 )
 
 var (

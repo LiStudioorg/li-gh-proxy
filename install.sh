@@ -3,14 +3,14 @@ set -eu
 
 REPO="${REPO:-LiStudioorg/li-gh-proxy}"
 VERSION="${VERSION:-latest}"
-TMP_DIR="${TMP_DIR:-/tmp/hubproxy-install}"
+TMP_DIR="${TMP_DIR:-/tmp/li-gh-proxy-install}"
 
 log() {
     printf '%s\n' "$*"
 }
 
 fail() {
-    printf 'HubProxy 安装失败：%s\n' "$*" >&2
+    printf 'li-gh-proxy 安装失败：%s\n' "$*" >&2
     exit 1
 }
 
@@ -49,8 +49,8 @@ asset_name() {
     arch="$2"
 
     case "$packager:$arch" in
-        deb:amd64|rpm:amd64|apk:amd64) echo "hubproxy-linux-amd64.${packager}" ;;
-        deb:arm64|rpm:arm64|apk:arm64) echo "hubproxy-linux-arm64.${packager}" ;;
+        deb:amd64|rpm:amd64|apk:amd64) echo "li-gh-proxy-linux-amd64.${packager}" ;;
+        deb:arm64|rpm:arm64|apk:arm64) echo "li-gh-proxy-linux-arm64.${packager}" ;;
         *) fail "不支持的安装包目标：${packager}/${arch}" ;;
     esac
 }
@@ -104,7 +104,7 @@ rm -rf "$TMP_DIR"
 mkdir -p "$TMP_DIR"
 trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
 
-log "安装 HubProxy：linux/${ARCH}（${PACKAGER}）"
+log "安装 li-gh-proxy：linux/${ARCH}（${PACKAGER}）"
 
 ASSET="$(asset_name "$PACKAGER" "$ARCH")"
 ASSET_URL="$(asset_url "$ASSET")"
@@ -118,4 +118,4 @@ install_package "$PACKAGE_FILE" "$PACKAGER"
 
 log "安装完成"
 log "默认端口：5000"
-log "配置文件：/etc/hubproxy/config.toml"
+log "配置文件：/etc/li-gh-proxy/config.toml"

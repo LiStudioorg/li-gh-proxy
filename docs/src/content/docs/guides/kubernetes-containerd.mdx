@@ -1,9 +1,9 @@
 ---
 title: Kubernetes 与 containerd
-description: 在 K3s、RKE2 及原生 containerd 中配置 HubProxy 镜像加速。
+description: 在 K3s、RKE2 及原生 containerd 中配置 li-gh-proxy 镜像加速。
 ---
 
-HubProxy 兼容 OCI/Distribution Registry API v2。Kubernetes 节点通常由 **containerd** 拉取镜像，配置方式与 Docker `daemon.json` 不同。
+li-gh-proxy 兼容 OCI/Distribution Registry API v2。Kubernetes 节点通常由 **containerd** 拉取镜像，配置方式与 Docker `daemon.json` 不同。
 
 ## K3s
 
@@ -85,6 +85,6 @@ sudo systemctl restart containerd
 
 ## 注意事项
 
-- 每节点独立配置；生产环境 HubProxy 建议 HTTPS 反代
-- HubProxy 对上游匿名拉取，**无法**代理需要认证的私有镜像
+- 每节点独立配置；生产环境 li-gh-proxy 建议 HTTPS 反代
+- li-gh-proxy 对上游匿名拉取，**无法**代理需要认证的私有镜像
 - 见 [传输特性](/guides/capabilities/)

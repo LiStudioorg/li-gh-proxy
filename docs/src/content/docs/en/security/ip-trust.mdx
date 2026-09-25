@@ -1,9 +1,9 @@
 ﻿---
 title: IP Trust
-description: How HubProxy identifies real client IPs and prevents spoofing.
+description: How li-gh-proxy identifies real client IPs and prevents spoofing.
 ---
 
-HubProxy uses Gin's `ClientIP()` with trusted proxy CIDRs to decide when to trust forwarding headers.
+li-gh-proxy uses Gin's `ClientIP()` with trusted proxy CIDRs to decide when to trust forwarding headers.
 
 ## Trusted Proxy CIDRs
 
@@ -47,4 +47,4 @@ See [Reverse Proxy](/en/deployment/reverse-proxy/).
 
 When users reach your proxy via Cloudflare, the reverse proxy should read `CF-Connecting-IP` and write it to forwarding headers.
 
-HubProxy does **not** ship a Cloudflare IP trust list — it relies on the private-side proxy writing the correct IP.
+li-gh-proxy does **not** ship a Cloudflare IP trust list — it relies on the private-side proxy writing the correct IP.

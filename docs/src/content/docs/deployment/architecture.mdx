@@ -1,25 +1,25 @@
 ﻿---
 title: 推荐部署架构
-description: 公网部署 HubProxy 的推荐拓扑与安全要求。
+description: 公网部署 li-gh-proxy 的推荐拓扑与安全要求。
 ---
 
-公网服务建议通过反向代理暴露 HubProxy，保障服务器安全。
+公网服务建议通过反向代理暴露 li-gh-proxy，保障服务器安全。
 
 ## 推荐拓扑
 
 ```
-用户 → CDN（可选）→ Caddy/Nginx（私网/本机）→ HubProxy:5000
+用户 → CDN（可选）→ Caddy/Nginx（私网/本机）→ li-gh-proxy:5000
 ```
 
 | 组件 | 作用 |
 |------|------|
 | CDN | 可选，提供 TLS 与边缘加速 |
 | 反向代理 | 终止 TLS、写入真实客户端 IP、隐藏后端端口 |
-| HubProxy | 处理 Docker/GitHub 代理逻辑 |
+| li-gh-proxy | 处理 Docker/GitHub 代理逻辑 |
 
 ## 反代部署时的要求
 
-若采用上文推荐拓扑（用户 → 反代 → HubProxy），需满足：
+若采用上文推荐拓扑（用户 → 反代 → li-gh-proxy），需满足：
 
 1. **反代覆盖写** `X-Forwarded-For` / `X-Real-IP`（防止用户伪造 IP，勿 append 客户端自带头）
 2. **建议 5000 仅对反代可达**（绑定 `127.0.0.1` 或防火墙限制）
@@ -29,10 +29,10 @@ description: 公网部署 HubProxy 的推荐拓扑与安全要求。
 
 | 部署方式 | 每用户独立限流 | IP 防伪造 | 推荐度 |
 |---------|---------------|----------|--------|
-| CDN → 私网反代 → HubProxy | ✅ | ✅ | ⭐⭐⭐ |
-| Docker 内 Caddy + HubProxy | ✅ | ✅ | ⭐⭐⭐ |
-| 本机 Nginx → HubProxy | ✅ | ✅ | ⭐⭐⭐ |
-| Cloudflare 直连 HubProxy | ❌ 共用 CDN IP | ✅ | ⚠️ |
+| CDN → 私网反代 → li-gh-proxy | ✅ | ✅ | ⭐⭐⭐ |
+| Docker 内 Caddy + li-gh-proxy | ✅ | ✅ | ⭐⭐⭐ |
+| 本机 Nginx → li-gh-proxy | ✅ | ✅ | ⭐⭐⭐ |
+| Cloudflare 直连 li-gh-proxy | ❌ 共用 CDN IP | ✅ | ⚠️ |
 | 公网直连 `0.0.0.0:5000` | ✅ | ✅ | ⚠️ 容易被滥用 |
 
 ## 下一步

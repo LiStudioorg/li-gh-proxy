@@ -1,4 +1,4 @@
-# HubProxy
+# li-gh-proxy
 
  **Docker 和 GitHub 加速代理服务器**
 
@@ -32,7 +32,7 @@
 
 ```bash
 docker run -d \
-  --name hubproxy \
+  --name li-gh-proxy \
   -p 5000:5000 \
   --restart always \
   ghcr.io/listudioorg/li-gh-proxy
@@ -54,11 +54,11 @@ curl http://127.0.0.1:5000/ready
 curl -fsSL https://raw.githubusercontent.com/LiStudioorg/li-gh-proxy/main/install.sh | sh
 ```
 
-安装后配置文件位于 `/etc/hubproxy/config.toml`，服务自动启动。
+安装后配置文件位于 `/etc/li-gh-proxy/config.toml`，服务自动启动。
 
 ### 快速上手
 
-将 `yourdomain.com` 换成你的 `HubProxy` 地址
+将 `yourdomain.com` 换成你的 `li-gh-proxy` 地址
 ```bash
 # Docker 镜像加速
 docker pull yourdomain.com/nginx

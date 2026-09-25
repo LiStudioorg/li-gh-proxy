@@ -1,9 +1,9 @@
 ﻿---
 title: IP 信任机制
-description: HubProxy 如何识别真实客户端 IP 并防止伪造。
+description: li-gh-proxy 如何识别真实客户端 IP 并防止伪造。
 ---
 
-HubProxy 使用 Gin 的 `ClientIP()` 获取客户端地址，并配合可信代理网段判断何时信任转发头。
+li-gh-proxy 使用 Gin 的 `ClientIP()` 获取客户端地址，并配合可信代理网段判断何时信任转发头。
 
 ## 可信代理网段
 
@@ -45,6 +45,6 @@ proxy_set_header X-Forwarded-For $remote_addr;
 
 ## Cloudflare 场景
 
-若用户经 Cloudflare 到达反代，反代应从 `CF-Connecting-IP` 读取真实 IP 并写入转发头，而不是让 HubProxy 直连 Cloudflare。
+若用户经 Cloudflare 到达反代，反代应从 `CF-Connecting-IP` 读取真实 IP 并写入转发头，而不是让 li-gh-proxy 直连 Cloudflare。
 
-HubProxy **不**内置 Cloudflare IP 信任列表，依赖「反代在私网侧正确写入 IP」这一架构。
+li-gh-proxy **不**内置 Cloudflare IP 信任列表，依赖「反代在私网侧正确写入 IP」这一架构。

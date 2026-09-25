@@ -10,9 +10,9 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"hubproxy/config"
-	"hubproxy/handlers"
-	"hubproxy/utils"
+	"li-gh-proxy/config"
+	"li-gh-proxy/handlers"
+	"li-gh-proxy/utils"
 )
 
 func newTestRouter(t *testing.T, configBody string) *gin.Engine {
@@ -42,7 +42,7 @@ func performRequest(router http.Handler, method, path, body string) *httptest.Re
 	if body != "" {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	req.Header.Set("User-Agent", "hubproxy-test")
+	req.Header.Set("User-Agent", "li-gh-proxy-test")
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 	return w
@@ -60,7 +60,7 @@ func TestReadyRoute(t *testing.T) {
 	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
 		t.Fatal(err)
 	}
-	if got["ready"] != true || got["service"] != "hubproxy" {
+	if got["ready"] != true || got["service"] != "li-gh-proxy" {
 		t.Fatalf("unexpected ready response: %#v", got)
 	}
 }

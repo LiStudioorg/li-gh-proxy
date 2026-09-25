@@ -1,6 +1,6 @@
 <script setup lang="ts">
 useHead({
-  title: 'HubProxy',
+  title: 'li-gh-proxy',
 })
 </script>
 

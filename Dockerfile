@@ -18,13 +18,13 @@ RUN apk add --no-cache upx && go mod download
 COPY src/ .
 COPY --from=frontend /src/dist ./dist
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags="-s -w -X main.Version=${VERSION}" -trimpath -o hubproxy . && upx -9 hubproxy
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags="-s -w -X main.Version=${VERSION}" -trimpath -o li-gh-proxy . && upx -9 li-gh-proxy
 
 FROM alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/hubproxy .
+COPY --from=builder /app/li-gh-proxy .
 COPY --from=builder /app/config.toml .
 
-CMD ["./hubproxy"]
+CMD ["./li-gh-proxy"]

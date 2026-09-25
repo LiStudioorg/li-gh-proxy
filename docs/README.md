@@ -1,4 +1,4 @@
-# HubProxy 文档站
+# li-gh-proxy 文档站
 
 基于 [Astro Starlight](https://starlight.astro.build/)，默认中文，英文位于 `/en/`。
 

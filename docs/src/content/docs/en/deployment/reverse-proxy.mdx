@@ -3,7 +3,7 @@ title: Reverse Proxy
 description: Configure Caddy and Nginx to pass the real client IP correctly.
 ---
 
-The reverse proxy must **overwrite** the real client IP so HubProxy can rate-limit per user and resist IP spoofing.
+The reverse proxy must **overwrite** the real client IP so li-gh-proxy can rate-limit per user and resist IP spoofing.
 
 ## Caddy
 
@@ -55,7 +55,7 @@ If GitHub acceleration fails behind Nginx, check `proxy_set_header Host` per [is
 
 ## How It Works
 
-HubProxy only trusts forwarding headers when the TCP connection comes from trusted private/local ranges:
+li-gh-proxy only trusts forwarding headers when the TCP connection comes from trusted private/local ranges:
 
 - `127.0.0.0/8`
 - `10.0.0.0/8`

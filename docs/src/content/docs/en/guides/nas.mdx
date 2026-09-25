@@ -1,11 +1,11 @@
 ---
 title: NAS Configuration
-description: Configure HubProxy on Synology DSM and Feiniu fnOS.
+description: Configure li-gh-proxy on Synology DSM and Feiniu fnOS.
 ---
 
 Do **not** overwrite entire `daemon.json` with scripts — you may lose `data-root` and break existing containers.
 
-Assumes HubProxy is exposed at `https://example.com` via reverse proxy.
+Assumes li-gh-proxy is exposed at `https://example.com` via reverse proxy.
 
 ## Synology DSM (Container Manager)
 
@@ -59,7 +59,7 @@ Back up first; only append to `registry-mirrors`, keep `data-root`, restart Dock
 
 ### Notes
 
-- App Center apps may use fixed registries (e.g. Aliyun) unrelated to HubProxy
+- App Center apps may use fixed registries (e.g. Aliyun) unrelated to li-gh-proxy
 - Restart Docker after changes
 
 ## Related

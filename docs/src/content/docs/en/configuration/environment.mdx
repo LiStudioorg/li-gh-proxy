@@ -1,9 +1,9 @@
 ﻿---
 title: Environment Variables
-description: Environment variables supported by HubProxy.
+description: Environment variables supported by li-gh-proxy.
 ---
 
-Environment variables override config after `config.toml` is loaded. Sections not listed here (e.g. `[registries]`, `[tokenCache]`, `[access].whiteList`) can only be changed in the config file.
+Environment variables override config after `config.toml` is loaded. Sections not listed here (e.g. `[registries]`, `[tokenCache]`, `[access].whiteList`) can only be changed in the config file. Invalid values (e.g. `SERVER_PORT=abc`) produce a `配置警告` log line and the variable is ignored — startup is not affected.
 
 ## All Variables
 
@@ -14,19 +14,21 @@ Environment variables override config after `config.toml` is loaded. Sections no
 | `SERVER_PORT` | `[server].port` | Listen port |
 | `ENABLE_H2C` | `[server].enableH2C` | Enable HTTP/2 Cleartext (`true`/`false`) |
 | `ENABLE_FRONTEND` | `[server].enableFrontend` | Enable web UI (`true`/`false`) |
-| `MAX_FILE_SIZE` | `[server].fileSize` | Max single-file size (bytes) |
+| `MAX_FILE_SIZE` | `[server].fileSize` | Max single-file size (bytes or `"2GB"` format) |
 | `RATE_LIMIT` | `[rateLimit].requestLimit` | Requests per IP per period |
 | `RATE_PERIOD_HOURS` | `[rateLimit].periodHours` | Rate limit period (hours) |
-| `IP_WHITELIST` | `[security].whiteList` | Append rate-limit exempt IPs, comma-separated |
-| `IP_BLACKLIST` | `[security].blackList` | Append blocked IPs, comma-separated |
-| `ACCESS_PROXY` | `[access].proxy` | Upstream SOCKS5 proxy URL |
+| `IP_WHITELIST` | `[security].whiteList` | Rate-limit exempt IPs, comma-separated; setting it **replaces** the file list |
+| `IP_BLACKLIST` | `[security].blackList` | Blocked IPs, comma-separated; setting it **replaces** the file list |
+| `ACCESS_PROXY` | `[access].proxy` | Upstream SOCKS5 proxy URL; set to empty string to clear |
 | `MAX_IMAGES` | `[download].maxImages` | Max images per batch offline download |
+
+> **Behavior change**: `IP_WHITELIST` / `IP_BLACKLIST` used to be *appended* to the file list; they now fully *replace* it when set. Include the full list in the env var if you want to keep the file entries.
 
 ## Examples
 
 ```bash
 # systemd / local
-CONFIG_PATH=/etc/hubproxy/config.toml ./hubproxy
+CONFIG_PATH=/etc/li-gh-proxy/config.toml ./li-gh-proxy
 
 # Docker quick overrides
 docker run -d \
@@ -41,6 +43,6 @@ docker run -d \
 
 | Scenario | Recommendation |
 |----------|----------------|
-| systemd service | `CONFIG_PATH=/etc/hubproxy/config.toml` (built into service file) |
+| systemd service | `CONFIG_PATH=/etc/li-gh-proxy/config.toml` (built into service file) |
 | Docker | Mount `/app/config.toml`, use `-e` for quick overrides |
 | Local development | `CONFIG_PATH=./src/config.toml go run .` |

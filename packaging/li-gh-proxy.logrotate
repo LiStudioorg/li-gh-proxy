@@ -1,4 +1,4 @@
-/var/log/hubproxy.log {
+/var/log/li-gh-proxy.log {
     weekly
     maxsize 50M
     rotate 4

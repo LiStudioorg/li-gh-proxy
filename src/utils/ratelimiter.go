@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/time/rate"
-	"hubproxy/config"
+	"li-gh-proxy/config"
 )
 
 const (

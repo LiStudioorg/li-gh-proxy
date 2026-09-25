@@ -1,9 +1,9 @@
 ﻿---
 title: Docker Mirror
-description: Configure Docker clients to pull images through HubProxy.
+description: Configure Docker clients to pull images through li-gh-proxy.
 ---
 
-HubProxy implements Docker Registry API v2 and can accelerate Docker Hub and multiple third-party registries.
+li-gh-proxy implements Docker Registry API v2 and can accelerate Docker Hub and multiple third-party registries.
 
 ## Configure Docker Client
 
@@ -62,7 +62,7 @@ curl "https://example.com/api/tags/library/nginx"
 - Each layer counts against rate limits
 - Configure `[access].whiteList` for public deployments
 - Ensure correct client IP behind reverse proxy — see [Reverse Proxy](/en/deployment/reverse-proxy/)
-- Anonymous upstream pulls — **private authenticated images cannot be pulled through HubProxy**
+- Anonymous upstream pulls — **private authenticated images cannot be pulled through li-gh-proxy**
 
 ## Other environments
 

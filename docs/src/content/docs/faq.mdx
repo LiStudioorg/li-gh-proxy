@@ -1,12 +1,12 @@
 ﻿---
 title: 常见问题
-description: HubProxy 部署与使用中的常见问题解答。
+description: li-gh-proxy 部署与使用中的常见问题解答。
 ---
 
 <details>
-<summary>HubProxy 和免费 CDN 代理有什么区别？</summary>
+<summary>li-gh-proxy 和免费 CDN 代理有什么区别？</summary>
 
-HubProxy 是完全自托管的代理服务，数据与带宽由你自己控制，不依赖第三方免费 CDN 的不稳定性。你可以自定义限流、仓库白名单和上游 SOCKS5 代理。
+li-gh-proxy 是完全自托管的代理服务，数据与带宽由你自己控制，不依赖第三方免费 CDN 的不稳定性。你可以自定义限流、仓库白名单和上游 SOCKS5 代理。
 
 </details>
 
@@ -27,7 +27,7 @@ HubProxy 是完全自托管的代理服务，数据与带宽由你自己控制�
 <details>
 <summary>GitHub 加速链接怎么写？</summary>
 
-在**完整原始 URL** 前加上 HubProxy 域名，例如 `https://example.com/https://github.com/owner/repo/releases/download/...`。不支持 `/github/owner/...` 路径替换写法。详见 [GitHub 加速](/guides/github-proxy/)。
+在**完整原始 URL** 前加上 li-gh-proxy 域名，例如 `https://example.com/https://github.com/owner/repo/releases/download/...`。不支持 `/github/owner/...` 路径替换写法。详见 [GitHub 加速](/guides/github-proxy/)。
 
 </details>
 
@@ -48,14 +48,14 @@ HubProxy 是完全自托管的代理服务，数据与带宽由你自己控制�
 <details>
 <summary>使用 Cloudflare 后所有用户共用一个 IP 怎么办？</summary>
 
-若 HubProxy 直连 Cloudflare 边缘节点，限流会按 Cloudflare IP 计数，无法区分用户。正确做法是在 Cloudflare 后面加一层私网反代，由反代写入 `CF-Connecting-IP`。
+若 li-gh-proxy 直连 Cloudflare 边缘节点，限流会按 Cloudflare IP 计数，无法区分用户。正确做法是在 Cloudflare 后面加一层私网反代，由反代写入 `CF-Connecting-IP`。
 
 </details>
 
 <details>
 <summary>如何验证服务是否正常？</summary>
 
-访问 `https://example.com/ready`，正常时返回 `{"ready":true,"service":"hubproxy",...}`，包含 `version` 与 `uptime_sec` 字段。该路径**会计入** IP 限流，避免高频轮询。
+访问 `https://example.com/ready`，正常时返回 `{"ready":true,"service":"li-gh-proxy",...}`，包含 `version` 与 `uptime_sec` 字段。该路径**会计入** IP 限流，避免高频轮询。
 
 </details>
 
@@ -87,6 +87,6 @@ HubProxy 是完全自托管的代理服务，数据与带宽由你自己控制�
 <details>
 <summary>authType 配置了 GitHub Token 为什么私有镜像仍拉不下来？</summary>
 
-当前版本 `authType` 仅标识认证端点类型，尚未实现凭据注入，所有 Registry 均使用匿名拉取，且不转发客户端 `Authorization` 头。**无法**通过 HubProxy 拉取需要认证的私有镜像。
+当前版本 `authType` 仅标识认证端点类型，尚未实现凭据注入，所有 Registry 均使用匿名拉取，且不转发客户端 `Authorization` 头。**无法**通过 li-gh-proxy 拉取需要认证的私有镜像。
 
 </details>

@@ -12,8 +12,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"hubproxy/config"
-	"hubproxy/utils"
+	"li-gh-proxy/config"
+	"li-gh-proxy/utils"
 )
 
 // DockerProxy Docker代理配置
@@ -76,7 +76,7 @@ func InitDockerProxy() {
 
 	options := []remote.Option{
 		remote.WithAuth(authn.Anonymous),
-		remote.WithUserAgent("hubproxy/go-containerregistry"),
+		remote.WithUserAgent("li-gh-proxy/go-containerregistry"),
 		remote.WithTransport(utils.GetGlobalHTTPClient().Transport),
 	}
 
@@ -632,7 +632,7 @@ func handleUpstreamTagsRequest(c *gin.Context, imageRef string, mapping config.R
 func createUpstreamOptions(mapping config.RegistryMapping) []remote.Option {
 	options := []remote.Option{
 		remote.WithAuth(authn.Anonymous),
-		remote.WithUserAgent("hubproxy/go-containerregistry"),
+		remote.WithUserAgent("li-gh-proxy/go-containerregistry"),
 		remote.WithTransport(utils.GetGlobalHTTPClient().Transport),
 	}
 

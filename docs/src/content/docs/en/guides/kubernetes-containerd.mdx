@@ -1,6 +1,6 @@
 ---
 title: Kubernetes & containerd
-description: Configure HubProxy as a registry mirror for K3s, RKE2, and containerd.
+description: Configure li-gh-proxy as a registry mirror for K3s, RKE2, and containerd.
 ---
 
 Kubernetes nodes typically pull images via **containerd**, not Docker `daemon.json`.
@@ -79,5 +79,5 @@ sudo systemctl restart containerd
 ## Notes
 
 - Configure every node; use HTTPS in production
-- HubProxy pulls upstream anonymously — **private authenticated images cannot be proxied**
+- li-gh-proxy pulls upstream anonymously — **private authenticated images cannot be proxied**
 - See [Transfer Capabilities](/en/guides/capabilities/)

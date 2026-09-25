@@ -1,16 +1,16 @@
 #!/sbin/openrc-run
 
-name="hubproxy"
+name="li-gh-proxy"
 description="Docker and GitHub acceleration proxy server"
-command="/usr/bin/hubproxy"
+command="/usr/bin/li-gh-proxy"
 pidfile="/run/${RC_SVCNAME}.pid"
-output_log="/var/log/hubproxy.log"
-error_log="/var/log/hubproxy.log"
+output_log="/var/log/li-gh-proxy.log"
+error_log="/var/log/li-gh-proxy.log"
 supervisor="supervise-daemon"
 respawn_delay=5
 respawn_max=0
 
-export CONFIG_PATH="/etc/hubproxy/config.toml"
+export CONFIG_PATH="/etc/li-gh-proxy/config.toml"
 
 depend() {
     need net

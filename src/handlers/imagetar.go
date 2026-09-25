@@ -26,8 +26,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"hubproxy/config"
-	"hubproxy/utils"
+	"li-gh-proxy/config"
+	"li-gh-proxy/utils"
 )
 
 // DebounceEntry 防抖条目

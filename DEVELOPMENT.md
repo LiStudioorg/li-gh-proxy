@@ -1,10 +1,10 @@
-# HubProxy 开发文档
+# li-gh-proxy 开发文档
 
-> 本文面向开发者，介绍 HubProxy 的整体架构、模块划分、核心设计、本地开发与构建发布流程。
+> 本文面向开发者，介绍 li-gh-proxy 的整体架构、模块划分、核心设计、本地开发与构建发布流程。
 
 ## 1. 项目概述
 
-HubProxy 是一个轻量级、高性能的多功能加速代理服务，核心能力：
+li-gh-proxy 是一个轻量级、高性能的多功能加速代理服务，核心能力：
 
 | 能力 | 说明 |
 |---|---|
@@ -42,7 +42,7 @@ HubProxy 是一个轻量级、高性能的多功能加速代理服务，核心�
 
 ```
 li-gh-proxy/
-├── src/                        # Go 后端（module: hubproxy）
+├── src/                        # Go 后端（module: li-gh-proxy）
 │   ├── main.go                 # 入口：路由注册、embed 静态资源、HTTP Server
 │   ├── main_test.go            # 全栈集成测试
 │   ├── config.toml             # 默认配置模板（也是 Docker 镜像内配置）
@@ -94,10 +94,13 @@ src/main.go  //go:embed all:dist        ← 编译期将整个 SPA 嵌入二进�
                          │
                          ▼
 registerFrontendRoutes(router, cfg.Server.EnableFrontend)
-  GET / 、/images、/search  → serveSPA（dist/index.html，Nuxt 客户端路由接管）
-  GET /assets/*filepath     → dist/assets（含 ".." 路径穿越防护）
+  GET / 、/images、/search  → serveSPA（dist/index.html，Nuxt 客户端路由接管；Cache-Control: no-cache）
+  GET /assets/*filepath     → dist/assets（含 ".." 路径穿越防护；Cache-Control: public, max-age=31536000, immutable）
+  GET /favicon.ico          → dist/favicon.ico（Cache-Control: public, max-age=604800）
   EnableFrontend=false      → 上述路由全部 404（纯代理模式）
 ```
+
+**静态资源加速**：启动时 `precompressStaticAssets()` 对内嵌文本资源（html/js/css/svg/json 等，≥1KB）做一次性 gzip 最高压缩，请求期按 `Accept-Encoding` 协商回放压缩副本（可压缩类型恒定返回 `Vary: Accept-Encoding`）；woff2/图片本身已压缩，直接透传。
 
 **关键约束**：
 - Go 编译前必须先完成 `web/` 构建，否则 embed 失败。这是 CI 与 Dockerfile 都把前端构建放在 Go 构建之前的原因。
@@ -158,11 +161,15 @@ main.go
 
 ## 5. 核心模块详解
 
-### 5.1 config/config.go — 配置
+### 5.1 config/ — 配置
 
-- **加载三步**：`DefaultConfig()` 内置默认值 → 按 `CONFIG_PATH` 环境变量（缺省 `./config.toml`）读 toml（文件不存在仅提示不报错）→ `overrideFromEnv` 环境变量覆盖。
-- **环境变量**：`SERVER_HOST`、`SERVER_PORT`、`ENABLE_H2C`、`ENABLE_FRONTEND`、`MAX_FILE_SIZE`、`RATE_LIMIT`、`RATE_PERIOD_HOURS`、`IP_WHITELIST`/`IP_BLACKLIST`（逗号分隔，**追加**语义）、`ACCESS_PROXY`（允许设空清除）、`MAX_IMAGES`。类型转换失败静默忽略。
-- **并发安全设计**：`GetConfig()` 返回 5 秒 TTL 的副本缓存（外层 `configCacheMutex`），内层 `appConfigLock` 保护源配置；返回时对 4 个切片深拷贝。Handler 可在每请求中高频调用而无锁竞争。
+**文件划分**：`config.go`（Load/Get 门面 + atomic 快照）、`model.go`（命名结构体）、`types.go`（`ByteSize`/`Duration` 强类型）、`defaults.go`（默认值唯一来源）、`toml.go`（解码 + 未知字段告警）、`env.go`（环境变量覆盖）、`validate.go`（启动校验）。
+
+- **加载管线**：`DefaultConfig()` 内置默认值 → 按 `CONFIG_PATH` 环境变量（缺省 `./config.toml`）读 toml（文件不存在仅提示不报错；未知字段**告警不阻断**）→ `overrideFromEnv` 环境变量覆盖（非法值告警并忽略）→ `validate` 启动校验（致命错误聚合返回，启动终止）→ 切片/map 克隆后 `atomic.Pointer` 发布。
+- **环境变量**：`SERVER_HOST`、`SERVER_PORT`、`ENABLE_H2C`、`ENABLE_FRONTEND`、`MAX_FILE_SIZE`、`RATE_LIMIT`、`RATE_PERIOD_HOURS`、`IP_WHITELIST`/`IP_BLACKLIST`（逗号分隔，**设置即整体替换**文件名单，不再追加）、`ACCESS_PROXY`（允许设空清除）、`MAX_IMAGES`。
+- **强类型**：`server.fileSize` 为 `ByteSize`（裸整数或 `"2GB"`/`"1.5GiB"` 字符串），`tokenCache.defaultTTL` 为 `Duration`（时长字符串，加载期校验，不再运行期静默回退）。
+- **校验策略**：数值/枚举类错误（端口越界、非正数、非法 proxy scheme、registries.upstream 为空）致命；历史上可静默容忍的问题（IP 名单非法条目、非标准 authType）仅告警——避免存量部署升级后无法启动。
+- **并发模型**：快照在两次 `LoadConfig()` 之间不可变，`GetConfig()` 为单次原子读，无锁无深拷贝。**调用方禁止修改返回值**（含切片/map 元素）。
 - 配置段：`[server]`、`[rateLimit]`、`[security]`（IP 层黑白名单）、`[access]`（仓库层黑白名单 + proxy）、`[download]`、`[registries.*]`（多 Registry 映射）、`[tokenCache]`。
 
 ### 5.2 handlers/docker.go — Registry v2 代理
@@ -327,15 +334,15 @@ go test ./...     # 单测 + main_test.go 集成测试（httptest 全栈）
 3. **runtime**：`alpine`，仅二进制 + config.toml
 
 ```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t hubproxy:local .
+docker buildx build --platform linux/amd64,linux/arm64 -t li-gh-proxy:local .
 ```
 
 ### 9.2 系统包（nfpm）
 
 `packaging/nfpm.{deb-rpm,apk}.yaml`，通过 `NFPM_ARCH` / `NFPM_VERSION` 注入：
 
-- 二进制 → `/usr/bin/hubproxy`；配置 → `/etc/hubproxy/config.toml`（noreplace，升级不覆盖）
-- deb/rpm：systemd unit（`CONFIG_PATH=/etc/hubproxy/config.toml`，`Restart=always`）
+- 二进制 → `/usr/bin/li-gh-proxy`；配置 → `/etc/li-gh-proxy/config.toml`（noreplace，升级不覆盖）
+- deb/rpm：systemd unit（`CONFIG_PATH=/etc/li-gh-proxy/config.toml`，`Restart=always`）
 - apk：OpenRC + logrotate
 
 ### 9.3 CI/CD（.github/workflows）
@@ -367,3 +374,4 @@ gh run watch --exit-status     # 跟踪进度
 6. **gitignore**：`src/dist/`、`web/.nuxt/`、`web/.output/` 不入库，仅构建时生成。
 7. **lockfile 即契约**：Docker 与 CI 均用 `npm ci` 安装（严格校验 `package-lock.json`），升级依赖必须在本地完整跑通 `npm ci && npm run build` 后再提交锁文件。
 8. **前端产物契约**：`nuxt.config.ts` 中 `ssr: false`、`buildAssetsDir: 'assets/'`、`nitro.output.publicDir → ../src/dist` 三项与 Go embed 一一对应，改动任一项都会破坏单二进制交付。
+9. **静态资源加速**：gzip 预压缩在启动时完成（见 4.1）；`/assets/*` 文件名含内容 hash，可 `immutable` 长缓存，因此 `index.html` 必须保持 `no-cache`，否则发版后客户端会拿旧 hash 引用而 404。

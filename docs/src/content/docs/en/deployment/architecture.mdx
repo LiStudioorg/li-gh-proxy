@@ -1,25 +1,25 @@
 ﻿---
 title: Recommended Architecture
-description: Recommended topology and security requirements for public HubProxy deployments.
+description: Recommended topology and security requirements for public li-gh-proxy deployments.
 ---
 
-For public deployments, a reverse proxy in front of HubProxy is recommended to keep the server secure.
+For public deployments, a reverse proxy in front of li-gh-proxy is recommended to keep the server secure.
 
 ## Recommended Topology
 
 ```
-Users → CDN (optional) → Caddy/Nginx (private/local) → HubProxy:5000
+Users → CDN (optional) → Caddy/Nginx (private/local) → li-gh-proxy:5000
 ```
 
 | Component | Role |
 |-----------|------|
 | CDN | Optional TLS termination and edge caching |
 | Reverse proxy | TLS, real client IP injection, hide backend port |
-| HubProxy | Docker/GitHub proxy logic |
+| li-gh-proxy | Docker/GitHub proxy logic |
 
 ## Requirements When Using a Reverse Proxy
 
-If you follow the recommended topology above (users → proxy → HubProxy):
+If you follow the recommended topology above (users → proxy → li-gh-proxy):
 
 1. Reverse proxy must **overwrite** `X-Forwarded-For` / `X-Real-IP` (prevent client IP spoofing — never append client-supplied headers)
 2. **Preferably make port 5000 reachable only by the proxy** (bind `127.0.0.1` or firewall)
@@ -29,10 +29,10 @@ If you follow the recommended topology above (users → proxy → HubProxy):
 
 | Deployment | Per-user rate limit | IP spoof protection | Rating |
 |------------|--------------------|--------------------|--------|
-| CDN → private proxy → HubProxy | ✅ | ✅ | ⭐⭐⭐ |
-| Docker Caddy + HubProxy | ✅ | ✅ | ⭐⭐⭐ |
-| Local Nginx → HubProxy | ✅ | ✅ | ⭐⭐⭐ |
-| Cloudflare direct to HubProxy | ❌ shared CDN IP | ✅ | ⚠️ |
+| CDN → private proxy → li-gh-proxy | ✅ | ✅ | ⭐⭐⭐ |
+| Docker Caddy + li-gh-proxy | ✅ | ✅ | ⭐⭐⭐ |
+| Local Nginx → li-gh-proxy | ✅ | ✅ | ⭐⭐⭐ |
+| Cloudflare direct to li-gh-proxy | ❌ shared CDN IP | ✅ | ⚠️ |
 | Public `0.0.0.0:5000` | ✅ | ✅ | ⚠️ easily abused |
 
 ## Next Steps

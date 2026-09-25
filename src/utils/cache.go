@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"hubproxy/config"
+	"li-gh-proxy/config"
 )
 
 // CachedItem 通用缓存项
@@ -75,10 +75,8 @@ func BuildManifestCacheKey(imageRef, reference string) string {
 func GetManifestTTL(reference string) time.Duration {
 	cfg := config.GetConfig()
 	defaultTTL := 30 * time.Minute
-	if cfg.TokenCache.DefaultTTL != "" {
-		if parsed, err := time.ParseDuration(cfg.TokenCache.DefaultTTL); err == nil {
-			defaultTTL = parsed
-		}
+	if cfg.TokenCache.DefaultTTL > 0 {
+		defaultTTL = time.Duration(cfg.TokenCache.DefaultTTL)
 	}
 
 	if strings.HasPrefix(reference, "sha256:") {

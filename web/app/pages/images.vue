@@ -14,7 +14,7 @@ import {
 } from '~/utils/api'
 import { errorMessage } from '~/utils/format'
 
-useHead({ title: '离线镜像下载 · HubProxy' })
+useHead({ title: '离线镜像下载 · li-gh-proxy' })
 
 const singleImage = ref('')
 const singlePlatform = ref('linux/amd64')

@@ -1,13 +1,13 @@
 ﻿---
 title: Docker Deployment
-description: Deploy HubProxy with Docker and Docker Compose.
+description: Deploy li-gh-proxy with Docker and Docker Compose.
 ---
 
 ## docker run
 
 ```bash
 docker run -d \
-  --name hubproxy \
+  --name li-gh-proxy \
   -p 5000:5000 \
   --restart always \
   -v ./src/config.toml:/app/config.toml:ro \
@@ -25,7 +25,7 @@ docker compose up -d
 Mounts `./src/config.toml` to `/app/config.toml`. Log rotation (`200m × 3`) is preconfigured in Compose — no need to duplicate in `docker run`.
 
 :::caution
-In production, avoid mapping port 5000 directly to the public internet. Let a Caddy/Nginx container reach HubProxy on the internal network instead.
+In production, avoid mapping port 5000 directly to the public internet. Let a Caddy/Nginx container reach li-gh-proxy on the internal network instead.
 :::
 
 ## With Reverse Proxy
@@ -33,8 +33,8 @@ In production, avoid mapping port 5000 directly to the public internet. Let a Ca
 Typical Compose layout:
 
 ```
-caddy:    exposes 443, proxies to hubproxy:5000
-hubproxy: internal 5000 only, not mapped to host public interface
+caddy:    exposes 443, proxies to li-gh-proxy:5000
+li-gh-proxy: internal 5000 only, not mapped to host public interface
 ```
 
 ## Health Check
