@@ -16,7 +16,7 @@ HubProxy 是一个轻量级、高性能的多功能加速代理服务，核心�
 | 安全防护 | IP 令牌桶限流（IPv6 按 /64）、IP 黑白名单、仓库/镜像黑白名单（通配符） |
 | 出站代理 | 可选 SOCKS5/HTTP 上游代理 |
 
-**总体形态**：Go 单二进制（内嵌 Vue SPA 前端），支持 Docker 多架构镜像与 `deb` / `rpm` / `apk` 系统包分发。
+**总体形态**：Go 单二进制（内嵌 Nuxt 4 SPA 前端），支持 Docker 多架构镜像与 `deb` / `rpm` / `apk` 系统包分发。
 
 ---
 
@@ -114,6 +114,8 @@ registerFrontendRoutes(router, cfg.Server.EnableFrontend)
 | `ANY /v2/*path` | handlers/docker.go | Docker Registry v2 代理 |
 | `NoRoute`（其余全部） | handlers/github.go | GitHub / HuggingFace 代理兜底 |
 | `/`、`/images`、`/search`、`/assets/*` | main.go | 内嵌 SPA（可关闭） |
+
+> 前端为 Nuxt 文件式路由，但 Go 侧 SPA 路由是**显式枚举**的——新增页面必须同步 `registerFrontendRoutes`（见 6.4）。
 
 ### 4.3 全局中间件链
 
@@ -220,6 +222,8 @@ main.go
 
 ## 6. 前端（web/）
 
+### 6.1 技术与结构
+
 - **Nuxt 4**（`ssr: false` 纯 SPA，Nuxt 4 默认 `app/` 目录结构）+ **fuxsto-design**（zinc 单色、Tailwind CSS v4 组件库，样式自包含、暗色模式开箱即用）+ lucide-vue-next 图标，无状态管理库，`app/utils/api.ts` 为唯一 API 封装（fetch + JSON 错误解析 + `ApiError`）。
 - 3 条文件式路由：`/`（GitHub 加速）、`/images`（离线镜像下载）、`/search`（镜像搜索/标签浏览），页面内 `useHead` 设置标题。
 - 样式入口 `app/assets/css/main.css`：`@import "tailwindcss"; @import "fuxsto-design/styles";`（库自带 `@theme` 桥接与 `dark:` 变体，消费方无需为其配置 Tailwind 扫描）。
@@ -227,9 +231,29 @@ main.go
 - 开发期 `nitro.devProxy`：`/api` → `http://127.0.0.1:5000`；生产期同源由 Gin 直接服务。
 - 构建产物输出 `../src/dist`（`nuxt generate`：index.html + assets/ + favicon.ico），被 Go embed。
 
+### 6.2 常用命令
+
+| 命令 | 说明 |
+|---|---|
+| `npm run dev` | 开发服务器（`/api` 自动代理到 `127.0.0.1:5000`） |
+| `npm run build` | `nuxt generate`，静态产物 → `../src/dist`（与 Go embed 约定绑定） |
+| `npm run typecheck` | `nuxt typecheck`（vue-tsc，strict 模式） |
+| `postinstall: nuxt prepare` | 安装依赖后自动生成 `.nuxt` 类型 |
+
+### 6.3 编码约定
+
+- **UI 组件**：统一使用 fuxsto-design，按子路径导入以获得最优 tree-shaking：`import Button from 'fuxsto-design/button'`。全局反馈用 `Message`（`fuxsto-design/message`），错误提示用 `Alert`，加载态优先用组件自带 `loading` prop（如 Button/Input）。
+- **自动导入**：`app/components/*`（页面模板直接用）、`app/composables/*`、`app/utils/*` 的具名导出（Nuxt 约定）；但跨文件引用 `app/utils/api.ts` 建议显式 `import ... from '~/utils/api'`（类型必须显式导入）。
+- **格式化工具**：`app/utils/format.ts`（`formatNumber` / `formatSize` / `formatArchs` / `formatTimeAgo` / `copyText` / `errorMessage`）。
+- **浏览器 API**：`window` / `document` 仅在事件回调或 `onMounted` 中使用（`ssr: false` 下组件不会在服务端执行，但 prerender 的 shell 阶段也要避免顶层副作用）。
+
+### 6.4 ⚠️ 新增/修改前端路由必须同步 Go 侧
+
+Go 只显式注册了 `/`、`/images`、`/search` 三条 SPA 路由（`src/main.go` 的 `registerFrontendRoutes`）。新增页面（如 `/about` → `app/pages/about.vue`）后，其余未注册路径会落入 NoRoute 的 GitHub 代理兜底（403）。**必须同步修改 `registerFrontendRoutes` 并补充 `main_test.go` 用例**；同理，前端资源约定 `buildAssetsDir: 'assets/'` 不可随意更改。
+
 ---
 
-## 7. API 接口速查（前端消费）
+## 7. API 接口速查（前端消费，封装于 `web/app/utils/api.ts`）
 
 | 函数 | 端点 | 说明 |
 |---|---|---|
@@ -249,10 +273,11 @@ main.go
 
 ### 8.2 后端开发（使用 Nuxt devProxy，无需构建前端）
 
-```bash
+```text
 # 终端 1：启动后端（首次需创建空的 src/dist 目录以通过 embed 校验）
 cd src
-mkdir dist 2>nul & type nul > dist\.keep
+mkdir dist 2>nul & type nul > dist\.keep     # Windows (cmd)
+# mkdir -p dist && touch dist/.keep          # Linux / macOS
 go run .
 
 # 终端 2：启动前端 dev server（/api 自动代理到 127.0.0.1:5000）
@@ -265,7 +290,7 @@ npm run dev
 
 ```bash
 # 必须先构建前端，否则 go:embed 失败
-cd web && npm ci && npm run build      # nuxt generate，产物 → src/dist
+cd web && npm ci && npm run typecheck && npm run build   # nuxt generate，产物 → src/dist
 cd ../src
 go build -ldflags="-s -w -X main.Version=dev" .
 ```
@@ -278,6 +303,18 @@ go test ./...     # 单测 + main_test.go 集成测试（httptest 全栈）
 ```
 
 测试覆盖 8 个集成场景：`/ready`、前端禁用 404、单/批量下载 prepare 签发 token、批量数量上限、GitHub 域名白名单校验、`/v2/` ping、搜索缺参 400、SPA 回退。各模块另有配套单测。
+
+> 前端暂无测试框架与 lint 配置，质量门禁为 `npm run typecheck`（vue-tsc strict）+ `npm run build`（构建失败即回退）。
+
+### 8.5 常见问题排查
+
+| 现象 | 原因与处理 |
+|---|---|
+| `go:embed all:dist` 编译失败 | `src/dist` 不存在或为空。先执行 `web/` 构建，或临时创建 `dist/.keep` 占位 |
+| CI `npm ci` 报 lockfile 不同步（missing xxx from lock file） | 本地增量安装可能遗漏部分平台 optional 依赖条目。删除 `node_modules` + `package-lock.json` 重新 `npm install`，并本地跑一次 `npm ci` 验证后再提交 |
+| 前端 dev 页面 `/api/*` 全部失败 | 后端未启动或未监听 `127.0.0.1:5000`（devProxy 目标） |
+| 访问新增前端页面返回 403 | 路径未在 `registerFrontendRoutes` 注册，落入 GitHub 代理兜底，见 6.4 |
+| Docker 镜像内配置不生效 | 挂载路径必须覆盖 `/app/config.toml`；镜像内缺省配置是 `src/config.toml` 模板 |
 
 ---
 
@@ -306,8 +343,15 @@ docker buildx build --platform linux/amd64,linux/arm64 -t hubproxy:local .
 | Workflow | 触发 | 流程 |
 |---|---|---|
 | `release.yml` | 手动（输入版本） | 构建前端 → Go 交叉编译 amd64/arm64 → UPX → nfpm 打 6 个系统包 → tar.gz → 生成 changelog → GitHub Release |
-| `docker-ghcr.yml` | 手动 | buildx 多架构推送 `ghcr.io/{repo}:{版本,latest}` |
+| `docker-ghcr.yml` | 手动（输入版本） | buildx 多架构推送 `ghcr.io/{repo}:{版本,latest}` |
 | `docs.yml` | push main（`docs/src/**` 变更）或手动 | Astro 构建 → GitHub Pages 部署 |
+
+手动触发示例：
+
+```bash
+gh workflow run "ghcr镜像构建" -f version=v1.2.6
+gh run watch --exit-status     # 跟踪进度
+```
 
 > **注意**：本仓库为 fork（`LiStudioorg/li-gh-proxy`）。仓库相关引用（`install.sh`、README、workflow 产物地址、文档站、nfpm 元数据）已统一指向本仓库；GHCR 镜像名使用小写 `ghcr.io/listudioorg/li-gh-proxy`（与 `docker-ghcr.yml` 中 `github.repository` 自动小写的结果一致）。LICENSE 版权声明与 FAQ 中引用的上游 issue 链接保持原样（fork 不继承 issue）。文档站域名 `docs.52013120.xyz` 仍为上游域名，如需自有域名需另行替换。
 
@@ -321,3 +365,5 @@ docker buildx build --platform linux/amd64,linux/arm64 -t hubproxy:local .
 4. **多层防护叠加**：IP 令牌桶（全局限流）→ 下载防抖（内容指纹 + 用户标识）→ 一次性令牌（防重放、IP/UA 绑定）。
 5. **错误处理**：以"日志 + 状态码"为主，无重试（搜索模块除外，3 次重试 + 退避）；tar 流开始输出后禁止再写响应体。
 6. **gitignore**：`src/dist/`、`web/.nuxt/`、`web/.output/` 不入库，仅构建时生成。
+7. **lockfile 即契约**：Docker 与 CI 均用 `npm ci` 安装（严格校验 `package-lock.json`），升级依赖必须在本地完整跑通 `npm ci && npm run build` 后再提交锁文件。
+8. **前端产物契约**：`nuxt.config.ts` 中 `ssr: false`、`buildAssetsDir: 'assets/'`、`nitro.output.publicDir → ../src/dist` 三项与 Go embed 一一对应，改动任一项都会破坏单二进制交付。
