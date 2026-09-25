@@ -17,6 +17,8 @@ func RegisterNodesRoute(r *gin.Engine) {
 		nodes := make([]config.NodeConfig, len(cfg.Nodes))
 		copy(nodes, cfg.Nodes)
 
+		// 节点列表跟随配置文件，禁止任何层缓存，避免配置更新后读到过期数据
+		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, gin.H{
 			"current": c.Request.Host,
 			"nodes":   nodes,

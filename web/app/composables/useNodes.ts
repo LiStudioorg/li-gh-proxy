@@ -2,6 +2,24 @@ import { fetchNodes, type NodeInfo } from '~/utils/api'
 
 const NODE_STORAGE_KEY = 'node'
 
+// localStorage 在隐私模式/存储被禁用时可能抛异常，统一吞掉仅降级为不记忆选择
+function readSavedNode(): string | null {
+  try {
+    return localStorage.getItem(NODE_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function persistSelection(url: string) {
+  try {
+    if (url) localStorage.setItem(NODE_STORAGE_KEY, url)
+    else localStorage.removeItem(NODE_STORAGE_KEY)
+  } catch {
+    // 存储不可用时忽略
+  }
+}
+
 interface ResolvedNode {
   origin: string
   host: string
@@ -31,10 +49,7 @@ export function useNodes() {
 
   function select(url: string) {
     selectedUrl.value = url
-    if (import.meta.client) {
-      if (url) localStorage.setItem(NODE_STORAGE_KEY, url)
-      else localStorage.removeItem(NODE_STORAGE_KEY)
-    }
+    if (import.meta.client) persistSelection(url)
   }
 
   async function load() {
@@ -42,12 +57,12 @@ export function useNodes() {
     try {
       const res = await fetchNodes()
       nodes.value = res.nodes
-      const saved = localStorage.getItem(NODE_STORAGE_KEY)
+      const saved = readSavedNode()
       if (saved && res.nodes.some((n) => n.url === saved)) {
         selectedUrl.value = saved
       } else {
         selectedUrl.value = ''
-        if (saved) localStorage.removeItem(NODE_STORAGE_KEY)
+        if (saved) persistSelection('')
       }
     } catch {
       // 获取失败时静默降级为当前站点

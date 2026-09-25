@@ -339,6 +339,28 @@ func TestValidateAcceptsValidIPOrCIDR(t *testing.T) {
 
 // ---------- 节点配置 ----------
 
+func TestValidNodeURL(t *testing.T) {
+	cases := map[string]bool{
+		"https://a.example.com":           true,
+		"https://a.example.com/":          true, // 尾斜杠视为根路径
+		"http://127.0.0.1:5000":           true,
+		"HTTPS://a.example.com":           true, // scheme 大小写不敏感
+		"https://a.example.com/base":      false, // 路径会被前端 origin 丢弃，拒绝
+		"https://a.example.com/base/":     false,
+		"https://a.example.com/?x=1":      false,
+		"https://a.example.com/#frag":     false,
+		"https://user:pass@a.example.com": false, // 凭据会被前端 origin 丢弃，拒绝
+		"ftp://a.example.com":             false,
+		"a.example.com":                   false,
+		"":                                false,
+	}
+	for input, want := range cases {
+		if got := validNodeURL(input); got != want {
+			t.Fatalf("validNodeURL(%q) = %v, want %v", input, got, want)
+		}
+	}
+}
+
 func TestLoadConfigNodesEndToEnd(t *testing.T) {
 	cfg := loadFromString(t, `
 [[nodes]]
