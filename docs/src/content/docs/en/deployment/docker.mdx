@@ -22,7 +22,12 @@ The repository includes `docker-compose.yml`:
 docker compose up -d
 ```
 
-Mounts `./src/config.toml` to `/app/config.toml`. Log rotation (`200m × 3`) is preconfigured in Compose — no need to duplicate in `docker run`.
+Compose mounts two paths:
+
+- `./config.toml:/app/config.toml:ro` — for first-time deployment, run `cp src/config.toml ./config.toml`, then edit the host copy
+- `./data:/app/data` — friend links / sponsor cards data directory (file-based routing: one `*.toml` file per entry). Only used when `[friends]` / `[sponsors]` are enabled in the config; maintain files under `./data/friends/` and `./data/sponsors/` on the host — changes take effect within ~5 seconds
+
+Log rotation (`200m × 3`) is preconfigured in Compose — no need to duplicate in `docker run`.
 
 :::caution
 In production, avoid mapping port 5000 directly to the public internet. Let a Caddy/Nginx container reach li-gh-proxy on the internal network instead.

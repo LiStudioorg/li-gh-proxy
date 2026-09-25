@@ -22,7 +22,12 @@ docker run -d \
 docker compose up -d
 ```
 
-默认挂载 `./src/config.toml` 到容器内 `/app/config.toml`。Compose 文件内已配置日志轮转（`200m × 3`），无需在 `docker run` 中重复设置。
+Compose 挂载两项：
+
+- `./config.toml:/app/config.toml:ro` — 首次部署先 `cp src/config.toml ./config.toml`，再修改宿主机副本
+- `./data:/app/data` — 友链/赞助商数据目录（文件路由：每个 `*.toml` 一条记录）。仅在配置文件启用 `[friends]` / `[sponsors]` 后使用，宿主机在 `./data/friends/`、`./data/sponsors/` 下维护文件，保存后约 5 秒自动生效
+
+日志轮转（`200m × 3`）已在 Compose 内配置，无需在 `docker run` 中重复设置。
 
 :::caution
 生产环境建议不要将 `5000` 直接映射到公网。更安全的做法是让 Caddy/Nginx 容器访问 li-gh-proxy 内网地址。

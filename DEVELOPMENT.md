@@ -76,7 +76,7 @@ li-gh-proxy/
 ├── packaging/                  # nfpm 打包配置 + systemd/OpenRC service + logrotate
 ├── install.sh                  # 一键安装脚本（识别包管理器下载 Release 资产）
 ├── Dockerfile                  # 三阶段构建（前端 → Go → alpine 运行时）
-├── docker-compose.yml
+├── docker-compose.yml            # 部署编排（挂载 config.toml 与 data/ 数据目录）
 └── .github/workflows/          # release.yml / docker-ghcr.yml / docs.yml
 ```
 
@@ -236,7 +236,7 @@ main.go
 - **友链字段**：`name`、`url`（必填）；`description`、`avatar`（可选）。按文件名排序。
 - **赞助商字段**：`name`、`url`（必填）；`logo`、`description`、`tier`（可选，排序权重，数字越小越靠前，缺省 0，同 tier 按文件名排序）。
 - **热加载**：`contentLoader[T]` 泛型加载器，5s TTL 缓存（与 config 副本缓存机制对齐），缓存以 dataDir 为键——切换目录立即失效。返回浅拷贝防止调用方污染缓存。
-- **dataDir 解析**：相对路径统一基于**配置文件所在目录**解析（deb → `/etc/li-gh-proxy/data/...`、Docker → `/app/data/...`、本地开发 → `src/data/...`），在 `LoadConfig` 的 `resolveContentDirs` 中完成，快照内保存绝对路径。
+- **dataDir 解析**：相对路径统一基于**配置文件所在目录**解析（deb → `/etc/li-gh-proxy/data/...`、Docker → `/app/data/...`、本地开发 → `src/data/...`），在 `LoadConfig` 的 `resolveContentDirs` 中完成，快照内保存绝对路径。Docker Compose 已挂载 `./data:/app/data`，宿主机直接在 `./data/friends/`、`./data/sponsors/` 下维护数据文件。
 - **API**：`/api/features` 返回两功能开关；`/api/friends`、`/api/sponsors` 在功能关闭时返回 404（`code: FEATURE_DISABLED`），前端据此隐藏导航入口与首页区块。
 - **默认关闭**：`enabled = false`，需在配置文件或环境变量中显式开启。
 
@@ -359,6 +359,8 @@ go test ./...     # 单测 + main_test.go 集成测试（httptest 全栈）
 docker buildx build --platform linux/amd64,linux/arm64 -t li-gh-proxy:local .
 ```
 
+**Docker Compose 部署**：`docker-compose.yml` 挂载两项——`./config.toml:/app/config.toml:ro`（首次部署 `cp src/config.toml ./config.toml` 后修改）与 `./data:/app/data`（友链/赞助商数据目录，仅在配置启用 `[friends]`/`[sponsors]` 后使用，宿主机在 `./data/friends/`、`./data/sponsors/` 下每个 `*.toml` 一条记录）。已配置日志轮转（`200m × 3`）。
+
 ### 9.2 系统包（nfpm）
 
 `packaging/nfpm.{deb-rpm,apk}.yaml`，通过 `NFPM_ARCH` / `NFPM_VERSION` 注入：
@@ -381,6 +383,8 @@ docker buildx build --platform linux/amd64,linux/arm64 -t li-gh-proxy:local .
 gh workflow run "ghcr镜像构建" -f version=v1.2.6
 gh run watch --exit-status     # 跟踪进度
 ```
+
+> **版本号约定**：`docker-ghcr.yml` 会剥离输入版本的前导 `v`（`v1.3.0` → 镜像 tag `1.3.0`），同时推送 `{版本,latest}` 两个 tag；只推镜像，不创建 git tag / Release。
 
 > **注意**：本仓库为 fork（`LiStudioorg/li-gh-proxy`）。仓库相关引用（`install.sh`、README、workflow 产物地址、文档站、nfpm 元数据）已统一指向本仓库；GHCR 镜像名使用小写 `ghcr.io/listudioorg/li-gh-proxy`（与 `docker-ghcr.yml` 中 `github.repository` 自动小写的结果一致）。LICENSE 版权声明与 FAQ 中引用的上游 issue 链接保持原样（fork 不继承 issue）。文档站域名 `docs.52013120.xyz` 仍为上游域名，如需自有域名需另行替换。
 
